@@ -18,6 +18,10 @@ import {
   defineReactive
 } from '../util/index'
 
+/**
+ * Vue实例属性扩展 即静态属性和方法
+ */
+
 export function initGlobalAPI (Vue: GlobalAPI) {
   // config
   const configDef = {}
@@ -29,11 +33,13 @@ export function initGlobalAPI (Vue: GlobalAPI) {
       )
     }
   }
+  // 定义 访问器属性 config
   Object.defineProperty(Vue, 'config', configDef)
 
   // exposed util methods.
   // NOTE: these are not considered part of the public API - avoid relying on
   // them unless you are aware of the risk.
+  // 定义util工具函数 不推荐外部使用
   Vue.util = {
     warn,
     extend,
@@ -46,7 +52,7 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   Vue.nextTick = nextTick
 
   // 2.6 explicit observable API
-  Vue.observable = <T>(obj: T): T => {
+  Vue.observable = <>(obj: T): T => {
     observe(obj)
     return obj
   }
@@ -60,10 +66,15 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   // components with in Weex's multi-instance scenarios.
   Vue.options._base = Vue
 
+  // 内置组件
   extend(Vue.options.components, builtInComponents)
-
+  
+  // API Vue.use
   initUse(Vue)
+  // API Vue.mixin
   initMixin(Vue)
+  // Vue.extend
   initExtend(Vue)
+  // Vue.component Vue.filter Vue.directive
   initAssetRegisters(Vue)
 }

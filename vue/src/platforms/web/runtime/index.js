@@ -19,6 +19,11 @@ import { patch } from './patch'
 import platformDirectives from './directives/index'
 import platformComponents from './components/index'
 
+/**
+ * 对web runtime进行扩展
+ */
+
+// web平台相关config扩展
 // install platform specific utils
 Vue.config.mustUseProp = mustUseProp
 Vue.config.isReservedTag = isReservedTag
@@ -26,6 +31,7 @@ Vue.config.isReservedAttr = isReservedAttr
 Vue.config.getTagNamespace = getTagNamespace
 Vue.config.isUnknownElement = isUnknownElement
 
+// web平台指令和组件扩展
 // install platform runtime directives & components
 extend(Vue.options.directives, platformDirectives)
 extend(Vue.options.components, platformComponents)
@@ -33,6 +39,7 @@ extend(Vue.options.components, platformComponents)
 // install platform patch function
 Vue.prototype.__patch__ = inBrowser ? patch : noop
 
+// web平台的 $mount方法定义
 // public mount method
 Vue.prototype.$mount = function (
   el?: string | Element,
@@ -42,6 +49,7 @@ Vue.prototype.$mount = function (
   return mountComponent(this, el, hydrating)
 }
 
+// web平台 devtool的加载
 // devtools global hook
 /* istanbul ignore next */
 if (inBrowser) {
