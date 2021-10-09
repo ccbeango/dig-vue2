@@ -51,9 +51,11 @@ export default class Watcher {
     isRenderWatcher?: boolean
   ) {
     this.vm = vm
+    // 渲染watcher实例上添加 _watcher
     if (isRenderWatcher) {
       vm._watcher = this
     }
+    // 将watcher添加到虚拟DOM的所有_watchers数组里面
     vm._watchers.push(this)
     // options
     if (options) {
@@ -73,11 +75,13 @@ export default class Watcher {
     this.newDeps = []
     this.depIds = new Set()
     this.newDepIds = new Set()
+    // 非production环境 expOrFn转成字符串
     this.expression = process.env.NODE_ENV !== 'production'
       ? expOrFn.toString()
       : ''
     // parse expression for getter
     if (typeof expOrFn === 'function') {
+      // expOrFn赋值给getter
       this.getter = expOrFn
     } else {
       this.getter = parsePath(expOrFn)
@@ -91,6 +95,8 @@ export default class Watcher {
         )
       }
     }
+
+    // 非lazy下调用this.get() 即执行expOrFn mount时expOrFn为updateComponent()
     this.value = this.lazy
       ? undefined
       : this.get()
@@ -104,6 +110,7 @@ export default class Watcher {
     let value
     const vm = this.vm
     try {
+      // 执行getter
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {

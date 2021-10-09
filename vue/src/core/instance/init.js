@@ -12,6 +12,7 @@ import { extend, mergeOptions, formatComponentName } from '../util/index'
 
 let uid = 0
 
+// 使用new调用Vue构造函数时，执行Vue.prototype._init()方法
 export function initMixin (Vue: Class<Component>) {
   Vue.prototype._init = function (options?: Object) {
     const vm: Component = this
@@ -28,6 +29,8 @@ export function initMixin (Vue: Class<Component>) {
 
     // a flag to avoid this being observed
     vm._isVue = true
+
+    // 将传入的options最终merge到$options上
     // merge options
     if (options && options._isComponent) {
       // optimize internal component instantiation
@@ -41,21 +44,28 @@ export function initMixin (Vue: Class<Component>) {
         vm
       )
     }
+
+    // 初始化 _renderProxy
     /* istanbul ignore else */
     if (process.env.NODE_ENV !== 'production') {
       initProxy(vm)
     } else {
+      // 生产环境下 _renderProxy是vm组件(this)本身
       vm._renderProxy = vm
     }
     // expose real self
     vm._self = vm
     initLifecycle(vm)
     initEvents(vm)
+    // 初始化 render
     initRender(vm)
+    // Hook beforeCreate
     callHook(vm, 'beforeCreate')
     initInjections(vm) // resolve injections before data/props
+    // 初始化 data
     initState(vm)
     initProvide(vm) // resolve provide after data/props
+    // Hook created
     callHook(vm, 'created')
 
     /* istanbul ignore if */
@@ -65,6 +75,7 @@ export function initMixin (Vue: Class<Component>) {
       measure(`vue ${vm._name} init`, startTag, endTag)
     }
 
+    // 有el 调用$mount进行挂载
     if (vm.$options.el) {
       vm.$mount(vm.$options.el)
     }

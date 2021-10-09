@@ -28,9 +28,11 @@ export function initRender (vm: Component) {
   // so that we get proper render context inside it.
   // args order: tag, data, children, normalizationType, alwaysNormalize
   // internal version is used by render functions compiled from templates
+  // 被template编译成的render()函数使用来创建vnode的方法
   vm._c = (a, b, c, d) => createElement(vm, a, b, c, d, false)
   // normalization is always applied for the public version, used in
   // user-written render functions.
+  // 手写render()函数创建vnode方法
   vm.$createElement = (a, b, c, d) => createElement(vm, a, b, c, d, true)
 
   // $attrs & $listeners are exposed for easier HOC creation.
@@ -62,15 +64,19 @@ export function renderMixin (Vue: Class<Component>) {
   // install runtime convenience helpers
   installRenderHelpers(Vue.prototype)
 
+  // $nextTick
   Vue.prototype.$nextTick = function (fn: Function) {
     return nextTick(fn, this)
   }
 
+  // vm._render最终是通过执行createElement()方法并返回的是vnode，它是一个虚拟Node
+  // render执行，最终会替换掉原来的节点，这也是为什么根节点不能为html或body节点
   Vue.prototype._render = function (): VNode {
     const vm: Component = this
     const { render, _parentVnode } = vm.$options
 
     if (_parentVnode) {
+      // $scopedSlots 作用域插槽
       vm.$scopedSlots = normalizeScopedSlots(
         _parentVnode.data.scopedSlots,
         vm.$slots,
@@ -80,6 +86,7 @@ export function renderMixin (Vue: Class<Component>) {
 
     // set parent vnode. this allows render functions to have access
     // to the data on the placeholder node.
+    // $vnode 父级vnode
     vm.$vnode = _parentVnode
     // render self
     let vnode
@@ -88,30 +95,40 @@ export function renderMixin (Vue: Class<Component>) {
       // separately from one another. Nested component's render fns are called
       // when parent component is patched.
       currentRenderingInstance = vm
+      // 调用render()
+      // vm._renderProxy 生产环境就是vm本身 开发环境是Proxy代理
+      // vm.$createElement render内部使用来创建vnode
       vnode = render.call(vm._renderProxy, vm.$createElement)
     } catch (e) {
+      // 触发错误钩子函数
       handleError(e, vm, `render`)
       // return error render result,
       // or previous vnode to prevent render error causing blank component
       /* istanbul ignore else */
       if (process.env.NODE_ENV !== 'production' && vm.$options.renderError) {
         try {
+          // 开发环境触发定义的 renderError() 赋值vnode
           vnode = vm.$options.renderError.call(vm._renderProxy, vm.$createElement, e)
         } catch (e) {
+          // 触发错误钩子函数
           handleError(e, vm, `renderError`)
+          // 赋值vnode
           vnode = vm._vnode
         }
       } else {
+        // 生产环境报错，直接赋值vnode
         vnode = vm._vnode
       }
     } finally {
       currentRenderingInstance = null
     }
+
     // if the returned array contains only a single node, allow it
     if (Array.isArray(vnode) && vnode.length === 1) {
       vnode = vnode[0]
     }
     // return empty vnode in case the render function errored out
+    // 不允许多个根节点
     if (!(vnode instanceof VNode)) {
       if (process.env.NODE_ENV !== 'production' && Array.isArray(vnode)) {
         warn(
@@ -120,6 +137,7 @@ export function renderMixin (Vue: Class<Component>) {
           vm
         )
       }
+      // 多个根节点，将vnoe赋值未空vnode
       vnode = createEmptyVNode()
     }
     // set parent

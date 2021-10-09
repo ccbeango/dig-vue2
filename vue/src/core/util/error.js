@@ -6,6 +6,14 @@ import { inBrowser, inWeex } from './env'
 import { isPromise } from 'shared/util'
 import { pushTarget, popTarget } from '../observer/dep'
 
+/**
+ * 错误处理
+ * 命中组件中errorCaptured函数 命中globalHandleError函数
+ * @param {*} err 
+ * @param {*} vm 
+ * @param {*} info 
+ * @returns 
+ */
 export function handleError (err: Error, vm: any, info: string) {
   // Deactivate deps tracking while processing error handler to avoid possible infinite rendering.
   // See: https://github.com/vuejs/vuex/issues/1505
@@ -55,6 +63,14 @@ export function invokeWithErrorHandling (
   return res
 }
 
+/**
+ * config.errorHandler
+ * 命中全局定义错误处理
+ * @param {*} err 
+ * @param {*} vm 
+ * @param {*} info 
+ * @returns 
+ */
 function globalHandleError (err, vm, info) {
   if (config.errorHandler) {
     try {

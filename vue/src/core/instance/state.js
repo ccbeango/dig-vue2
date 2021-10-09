@@ -49,14 +49,19 @@ export function proxy (target: Object, sourceKey: string, key: string) {
 export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options
+  // 初始化 props
   if (opts.props) initProps(vm, opts.props)
+  // 初始化 methods
   if (opts.methods) initMethods(vm, opts.methods)
+  // 初始化 data
   if (opts.data) {
     initData(vm)
   } else {
     observe(vm._data = {}, true /* asRootData */)
   }
+  // 初始化 computed
   if (opts.computed) initComputed(vm, opts.computed)
+  // 初始化 watch
   if (opts.watch && opts.watch !== nativeWatch) {
     initWatch(vm, opts.watch)
   }
@@ -112,9 +117,12 @@ function initProps (vm: Component, propsOptions: Object) {
 
 function initData (vm: Component) {
   let data = vm.$options.data
+  // data function 执行返回；否则直接获取，为空则赋值为空对象
   data = vm._data = typeof data === 'function'
     ? getData(data, vm)
     : data || {}
+
+  // [object Object] 非[object Object]对象类型，默认赋值空 {}
   if (!isPlainObject(data)) {
     data = {}
     process.env.NODE_ENV !== 'production' && warn(
@@ -123,6 +131,11 @@ function initData (vm: Component) {
       vm
     )
   }
+
+  // data中key与props或methods中重名，对应处理，并提示警告
+  // 与methods重名，data覆盖methods同名key
+  // 与props重名，data丢掉，使用props值
+  // 正常值做proxy代理，即设置为访问器属性，提供getter、setter
   // proxy data on instance
   const keys = Object.keys(data)
   const props = vm.$options.props
@@ -130,6 +143,7 @@ function initData (vm: Component) {
   let i = keys.length
   while (i--) {
     const key = keys[i]
+    // methods重名
     if (process.env.NODE_ENV !== 'production') {
       if (methods && hasOwn(methods, key)) {
         warn(
@@ -138,6 +152,7 @@ function initData (vm: Component) {
         )
       }
     }
+    // props重名
     if (props && hasOwn(props, key)) {
       process.env.NODE_ENV !== 'production' && warn(
         `The data property "${key}" is already declared as a prop. ` +
@@ -145,6 +160,7 @@ function initData (vm: Component) {
         vm
       )
     } else if (!isReserved(key)) {
+      // 设置访问器属性 this._data.hello (setter\getter)
       proxy(vm, `_data`, key)
     }
   }

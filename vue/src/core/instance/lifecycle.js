@@ -138,14 +138,19 @@ export function lifecycleMixin (Vue: Class<Component>) {
   }
 }
 
+// mountComponent 方法会完成整个渲染工作
 export function mountComponent (
   vm: Component,
   el: ?Element,
   hydrating?: boolean
 ): Component {
+  // $el Vue实例使用的根DOM元素
   vm.$el = el
+  // render不存在 命中处理
   if (!vm.$options.render) {
+    // render不存在，创建空的VNode
     vm.$options.render = createEmptyVNode
+    // 警告提示
     if (process.env.NODE_ENV !== 'production') {
       /* istanbul ignore if */
       if ((vm.$options.template && vm.$options.template.charAt(0) !== '#') ||
@@ -164,6 +169,7 @@ export function mountComponent (
       }
     }
   }
+  // Hook beforeMount
   callHook(vm, 'beforeMount')
 
   let updateComponent
@@ -186,7 +192,10 @@ export function mountComponent (
       measure(`vue ${name} patch`, startTag, endTag)
     }
   } else {
+    // 渲染Watcher会在实例化时和更新时执行DOM渲染
     updateComponent = () => {
+      // 先 vm._render() 生成虚拟Node
+      // vm._update() 更新DOM
       vm._update(vm._render(), hydrating)
     }
   }
@@ -194,9 +203,15 @@ export function mountComponent (
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+  // 实例化渲染Watcher
+  // 观察者模式
+  // Watcher 在这里起到两个作用：
+  //    一个是初始化的时候会执行回调函数updateComponent
+  //    另一个是当 vm 实例中的监测的数据发生变化的时候执行回调函数updateComponent
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
+        // Hook beforeUpdate
         callHook(vm, 'beforeUpdate')
       }
     }
@@ -205,8 +220,12 @@ export function mountComponent (
 
   // manually mounted instance, call mounted on self
   // mounted is called for render-created child components in its inserted hook
+  // vm.$vnode表示Vue实例的父虚拟Node，所以它为Null则表示当前是根Vue的实例
   if (vm.$vnode == null) {
+    // vm._isMounted为true，表示这个实例已经挂载了
     vm._isMounted = true
+    // 同时执行 mounted 钩子函数
+    // Hook mounted
     callHook(vm, 'mounted')
   }
   return vm

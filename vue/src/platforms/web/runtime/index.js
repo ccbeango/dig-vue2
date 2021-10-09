@@ -39,13 +39,15 @@ extend(Vue.options.components, platformComponents)
 // install platform patch function
 Vue.prototype.__patch__ = inBrowser ? patch : noop
 
-// web平台的 $mount方法定义
 // public mount method
+// runtime实现，可以在runtime only和runtime+complier复用
+// runtime only会直接调用此方法
 Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean
 ): Component {
   el = el && inBrowser ? query(el) : undefined
+  // $mount 实际调用 mountComponent
   return mountComponent(this, el, hydrating)
 }
 

@@ -12,16 +12,21 @@ function Vue (options) {
   ) {
     warn('Vue is a constructor and should be called with the `new` keyword')
   }
+
+  // 调用 Vue.prototype._init()
   this._init(options)
 }
 
 // 以下是对Vue的prototype原型对象进行扩展
 // Vue按功能将这些扩展分散到多个模块中进行实现
 // 使用class难以实现
+
+// 定义 Vue.prototype._init()
 initMixin(Vue)
 stateMixin(Vue)
 eventsMixin(Vue)
 lifecycleMixin(Vue)
+// 定义 Vue.prototype._render()
 renderMixin(Vue)
 
 export default Vue
