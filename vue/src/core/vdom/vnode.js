@@ -1,5 +1,11 @@
 /* @flow */
 
+// VNode 是VirtualDOM中的每个节点
+// 虚拟DOM就是一个个VNode组合成的树结构
+// VNode 是对真实 DOM 的一种抽象描述
+// VirtualDOM除了它的数据结构的定义，
+// 映射到真实的DOM实际上要经历VNode的create、diff、patch等过程
+// VNode只是用来映射到真实DOM的渲染，不需要包含操作DOM的方法，因此它是非常轻量和简单的
 export default class VNode {
   tag: string | void;
   data: VNodeData | void;
@@ -71,6 +77,7 @@ export default class VNode {
   }
 }
 
+// 创建一个空注释占位节点 即一个空VNode节点
 export const createEmptyVNode = (text: string = '') => {
   const node = new VNode()
   node.text = text
@@ -78,6 +85,7 @@ export const createEmptyVNode = (text: string = '') => {
   return node
 }
 
+// 创建一个文本节点
 export function createTextVNode (val: string | number) {
   return new VNode(undefined, undefined, undefined, String(val))
 }

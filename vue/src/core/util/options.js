@@ -451,9 +451,12 @@ export function resolveAsset (
   }
   const assets = options[type]
   // check local registration variations first
+  // hello-wrold
   if (hasOwn(assets, id)) return assets[id]
+  // 转驼峰 hello-wrold => helloWorld
   const camelizedId = camelize(id)
   if (hasOwn(assets, camelizedId)) return assets[camelizedId]
+  // 首字母转大写 helloWorld => HelloWorld
   const PascalCaseId = capitalize(camelizedId)
   if (hasOwn(assets, PascalCaseId)) return assets[PascalCaseId]
   // fallback to prototype chain

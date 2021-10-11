@@ -195,6 +195,7 @@ export function mountComponent (
     // 渲染Watcher会在实例化时和更新时执行DOM渲染
     updateComponent = () => {
       // 先 vm._render() 生成虚拟Node
+      // 虚拟Node其实是vm._render()内部调用createElement()方法的返回值vnode
       // vm._update() 更新DOM
       vm._update(vm._render(), hydrating)
     }

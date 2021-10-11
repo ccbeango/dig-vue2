@@ -137,7 +137,7 @@ export function renderMixin (Vue: Class<Component>) {
           vm
         )
       }
-      // 多个根节点，将vnoe赋值未空vnode
+      // 多个根节点，将vnode赋值为空vnode
       vnode = createEmptyVNode()
     }
     // set parent
