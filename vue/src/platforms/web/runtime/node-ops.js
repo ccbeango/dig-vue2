@@ -2,18 +2,24 @@
 
 import { namespaceMap } from 'web/util/index'
 
+// 真实DOM操作相关API
+
+// 创建Element的DOM元素
 export function createElement (tagName: string, vnode: VNode): Element {
   const elm = document.createElement(tagName)
+  // 非select元素直接返回
   if (tagName !== 'select') {
     return elm
   }
   // false or null will remove the attribute but undefined will not
   if (vnode.data && vnode.data.attrs && vnode.data.attrs.multiple !== undefined) {
+    // select元素多选时,添加多选属性
     elm.setAttribute('multiple', 'multiple')
   }
   return elm
 }
 
+// 创建带命名空间的Element的DOM元素
 export function createElementNS (namespace: string, tagName: string): Element {
   return document.createElementNS(namespaceMap[namespace], tagName)
 }

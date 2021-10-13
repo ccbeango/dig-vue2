@@ -68,6 +68,7 @@ function normalizeArrayChildren (children: any, nestedIndex?: string): Array<VNo
     c = children[i]
     // 跳过undefined boolean的元素
     if (isUndef(c) || typeof c === 'boolean') continue
+
     lastIndex = res.length - 1
     last = res[lastIndex]
     //  nested

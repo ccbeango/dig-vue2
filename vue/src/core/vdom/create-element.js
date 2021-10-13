@@ -25,6 +25,9 @@ const ALWAYS_NORMALIZE = 2
 
 // wrapper function for providing a more flexible interface
 // without getting yelled at by flow
+// 创建VNode
+// 每个VNode有children，children的每个元素也是一个VNode，
+// 这样就形成了一个VNode Tree，它很好的描述了DOM Tree
 export function createElement (
   context: Component,
   tag: any,
@@ -51,6 +54,15 @@ export function createElement (
   return _createElement(context, tag, data, children, normalizationType)
 }
 
+/**
+ * 创建VNode
+ * @param {*} context VNode的上下文环境
+ * @param {*} tag 标签 可以是字符串也可以是Component
+ * @param {*} data 表示 VNode 的数据
+ * @param {*} children VNode的子节点，它是任意类型的，它接下来需要被规范为标准的VNode数组
+ * @param {*} normalizationType 子节点规范的类型，主要是参考render函数是编译生成还是用户手写
+ * @returns VNode | Array<VNode>
+ */
 export function _createElement (
   context: Component,
   tag?: string | Class<Component> | Function | Object,
@@ -123,12 +135,12 @@ export function _createElement (
         )
       }
       
-      // 平台内置节点
+      // 平台内置节点 HTML原生的
       vnode = new VNode(
         config.parsePlatformTagName(tag), data, children,
         undefined, undefined, context
       )
-    } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) {
+    } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) { // 组件标签
       // component
       // 局部注册的组件标签 创建组件类型VNode
       vnode = createComponent(Ctor, data, context, children, tag)
@@ -146,7 +158,7 @@ export function _createElement (
     }
   } else {
     // direct component options / constructor
-    // 非字符串标签 直接创建组件类型的VNode
+    // 直接是一个组件 直接创建组件类型的VNode
     vnode = createComponent(tag, data, context, children)
   }
 

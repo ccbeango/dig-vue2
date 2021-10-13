@@ -23,19 +23,20 @@ import platformComponents from './components/index'
  * 对web runtime进行扩展
  */
 
-// web平台相关config扩展
+// web平台相关工具函数
 // install platform specific utils
-Vue.config.mustUseProp = mustUseProp
-Vue.config.isReservedTag = isReservedTag
-Vue.config.isReservedAttr = isReservedAttr
-Vue.config.getTagNamespace = getTagNamespace
-Vue.config.isUnknownElement = isUnknownElement
+Vue.config.mustUseProp = mustUseProp // 必须绑定属性的标签
+Vue.config.isReservedTag = isReservedTag // 是否是Web端的HTML SVG标签
+Vue.config.isReservedAttr = isReservedAttr // 是否是style class 属性
+Vue.config.getTagNamespace = getTagNamespace // 获取命名空间
+Vue.config.isUnknownElement = isUnknownElement // 是否是未知元素标签
 
 // web平台指令和组件扩展
 // install platform runtime directives & components
-extend(Vue.options.directives, platformDirectives)
-extend(Vue.options.components, platformComponents)
+extend(Vue.options.directives, platformDirectives) // v-model v-show
+extend(Vue.options.components, platformComponents) // transition-group transition
 
+// 初始化__patch__方法
 // install platform patch function
 Vue.prototype.__patch__ = inBrowser ? patch : noop
 

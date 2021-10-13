@@ -9,4 +9,7 @@ import platformModules from 'web/runtime/modules/index'
 // built-in modules have been applied.
 const modules = platformModules.concat(baseModules)
 
+// 创建patch方法
+// nodeOps 真实DOM操作的封装API
+// modules 模块的钩子函数的实现 如操作directive ref attr class style event等的生命周期钩子函数
 export const patch: Function = createPatchFunction({ nodeOps, modules })
