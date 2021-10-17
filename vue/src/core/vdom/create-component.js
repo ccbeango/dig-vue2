@@ -77,9 +77,19 @@ const componentVNodeHooks = {
   insert (vnode: MountedComponentVNode) {
     const { context, componentInstance } = vnode
     if (!componentInstance._isMounted) {
+      // 未mounted组件进行mounted
       componentInstance._isMounted = true
+      /**
+       * 生命周期函数 mounted
+       *  调用时机2
+       *  执行时机：所有VNode节点真正被插入到DOM中之后
+       *  执行顺序：先子后父 
+       *  因为patch过程，先插入子vnode再插入父vnode
+       */
       callHook(componentInstance, 'mounted')
     }
+
+    // FIXME: 跳过keepAlive组件处理
     if (vnode.data.keepAlive) {
       if (context._isMounted) {
         // vue-router#1212
@@ -132,6 +142,7 @@ export function createComponent (
   const baseCtor = context.$options._base
 
   // plain options object: turn it into a constructor
+  // 全局注册组件和局部注册组件会跳过这里 因为在注册组件时，已经执行了Vue.extend()
   if (isObject(Ctor)) {
     // Ctor如果是对象，使用extend将其转换成一个构造函数
     Ctor = baseCtor.extend(Ctor)

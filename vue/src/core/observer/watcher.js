@@ -51,11 +51,13 @@ export default class Watcher {
     isRenderWatcher?: boolean
   ) {
     this.vm = vm
-    // 渲染watcher实例上添加 _watcher
     if (isRenderWatcher) {
+      // _watcher是监听vm上数据变化然后重新渲染的，所以它是一个渲染相关的watcher
+      // 如果当前watcher实例是 渲染watcher
+      // 将此watcher添加到vm实例的_watcher上
       vm._watcher = this
     }
-    // 将watcher添加到虚拟DOM的所有_watchers数组里面
+    // 将当前watcher添加到vm实例的_watchers数组中
     vm._watchers.push(this)
     // options
     if (options) {

@@ -226,7 +226,7 @@ LIFECYCLE_HOOKS.forEach(hook => {
  * a three-way merge between constructor options, instance
  * options and parent options.
  *  资源component、directive、filter合并策略
- *    将parentVal、childVal合并成一个新对象
+ *    使用parentVal作为原型，将parentVal、childVal合并成一个新对象
  *     childVal会覆盖parentVal上相同的值
  */
 function mergeAssets (

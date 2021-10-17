@@ -26,21 +26,36 @@ export function handleError (err: Error, vm: any, info: string) {
         if (hooks) {
           for (let i = 0; i < hooks.length; i++) {
             try {
+              // 遍历执行errorCaptured生命周期函数
               const capture = hooks[i].call(cur, err, vm, info) === false
               if (capture) return
             } catch (e) {
+              // 触发全局定义错误处理
               globalHandleError(e, cur, 'errorCaptured hook')
             }
           }
         }
       }
     }
+    // 触发全局定义错误处理
     globalHandleError(err, vm, info)
   } finally {
     popTarget()
   }
 }
 
+/**
+ * 执行hanlder
+ *  并添加错误处理逻辑 
+ *    有错误时，触发errorCaptured生命周期函数
+ *      触发config.globalHandleError错误处理函数
+ * @param {*} handler 
+ * @param {*} context 
+ * @param {*} args 
+ * @param {*} vm 
+ * @param {*} info 
+ * @returns 
+ */
 export function invokeWithErrorHandling (
   handler: Function,
   context: any,

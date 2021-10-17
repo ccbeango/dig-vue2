@@ -142,7 +142,7 @@ export function _createElement (
       )
     } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) { // 组件标签
       // component
-      // 局部注册的组件标签 创建组件类型VNode
+      // 注册的全局组件或局部组件标签 创建组件类型VNode
       vnode = createComponent(Ctor, data, context, children, tag)
     } else {
       // unknown or unlisted namespaced elements

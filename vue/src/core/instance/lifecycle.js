@@ -142,14 +142,22 @@ export function lifecycleMixin (Vue: Class<Component>) {
     if (vm._isBeingDestroyed) {
       return
     }
+    /**
+     * 生命周期函数 beforeDestroy
+     *  执行时机：
+     *  执行顺序：先父后子
+     */
     callHook(vm, 'beforeDestroy')
     vm._isBeingDestroyed = true
     // remove self from parent
+    // 从parent的$children中删掉自身
     const parent = vm.$parent
     if (parent && !parent._isBeingDestroyed && !vm.$options.abstract) {
       remove(parent.$children, vm)
     }
+
     // teardown watchers
+    // 删除watcher
     if (vm._watcher) {
       vm._watcher.teardown()
     }
@@ -157,6 +165,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
     while (i--) {
       vm._watchers[i].teardown()
     }
+
     // remove reference from data ob
     // frozen object may not have observer.
     if (vm._data.__ob__) {
@@ -164,10 +173,19 @@ export function lifecycleMixin (Vue: Class<Component>) {
     }
     // call the last hook...
     vm._isDestroyed = true
+    /**
+     * 执行组件销毁 会触发递归执行销毁
+     */
     // invoke destroy hooks on current rendered tree
     vm.__patch__(vm._vnode, null)
+    /**
+     * 生命周期函数 destroyed
+     *  执行时机
+     *  执行顺序：先子后父
+     */
     // fire destroyed hook
     callHook(vm, 'destroyed')
+
     // turn off all instance listeners.
     vm.$off()
     // remove __vue__ reference
@@ -212,7 +230,12 @@ export function mountComponent (
       }
     }
   }
-  // Hook beforeMount
+
+  /**
+   * 生命周期函数 beforeMount
+   *  执行时机 $mount执行时，DOM挂载之前
+   *  执行顺序 先父后子
+   */
   callHook(vm, 'beforeMount')
 
   let updateComponent
@@ -255,7 +278,11 @@ export function mountComponent (
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
-        // Hook beforeUpdate
+        /**
+         * 生命周期函数 beforeUpdate
+         * 执行时机：flushSchedulerQueue执行每个queue中的watcher时
+         * 执行顺序：
+         */
         callHook(vm, 'beforeUpdate')
       }
     }
@@ -264,12 +291,18 @@ export function mountComponent (
 
   // manually mounted instance, call mounted on self
   // mounted is called for render-created child components in its inserted hook
-  // vm.$vnode表示Vue实例的父虚拟Node，所以它为Null则表示当前是根Vue的实例
+  // vm.$vnode表示Vue实例的占位符VNode，它为Null则表示当前是根Vue的实例
   if (vm.$vnode == null) {
     // vm._isMounted为true，表示这个实例已经挂载了
     vm._isMounted = true
     // 同时执行 mounted 钩子函数
     // Hook mounted
+    /**
+     * 生命周期函数 mounted 
+     * 调用时机1 用户外部调用new Vue()
+     *  执行时机：用户外部new Vue()调用$mount挂载根节点 DOM挂载之后
+     *  执行顺序：先子后父 最后执行 在 调用时机2 中全部执行完之后执行
+     */
     callHook(vm, 'mounted')
   }
   return vm
@@ -397,13 +430,20 @@ export function deactivateChildComponent (vm: Component, direct?: boolean) {
   }
 }
 
+/**
+ * 执行组件生命周期函数
+ * @param {*} vm    组件实例
+ * @param {*} hook  生命周期函数字符串
+ */
 export function callHook (vm: Component, hook: string) {
   // #7573 disable dep collection when invoking lifecycle hooks
   pushTarget()
+  // 获取对应的生命周期 是一个数组 （mergeOptions中处理的）
   const handlers = vm.$options[hook]
   const info = `${hook} hook`
   if (handlers) {
     for (let i = 0, j = handlers.length; i < j; i++) {
+      // 执行生命周期函数
       invokeWithErrorHandling(handlers[i], vm, null, vm, info)
     }
   }

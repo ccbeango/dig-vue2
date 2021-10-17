@@ -251,6 +251,7 @@ export function createPatchFunction (backend) {
         createChildren(vnode, children, insertedVnodeQueue)
         if (isDef(data)) {
           // 执行 create 钩子函数
+          // 每插入一个节点
           invokeCreateHooks(vnode, insertedVnodeQueue)
         }
         // 插入节点
@@ -317,9 +318,10 @@ export function createPatchFunction (backend) {
     }
   }
 
-  // FIXME: 跳过 初始化组件
+  // 初始化组件
   function initComponent (vnode, insertedVnodeQueue) {
     if (isDef(vnode.data.pendingInsert)) {
+      // 首次初始化的VNode队列 插入VNode到insertedVnodeQueue中
       insertedVnodeQueue.push.apply(insertedVnodeQueue, vnode.data.pendingInsert)
       vnode.data.pendingInsert = null
     }
@@ -328,6 +330,7 @@ export function createPatchFunction (backend) {
     vnode.elm = vnode.componentInstance.$el
 
     if (isPatchable(vnode)) {
+      // 插入VNode到insertedVnodeQueue中
       invokeCreateHooks(vnode, insertedVnodeQueue)
       setScope(vnode)
     } else {
@@ -335,6 +338,7 @@ export function createPatchFunction (backend) {
       // skip all element-related modules except for ref (#3455)
       registerRef(vnode)
       // make sure to invoke the insert hook
+      // 插入VNode到insertedVnodeQueue中
       insertedVnodeQueue.push(vnode)
     }
   }
@@ -411,7 +415,8 @@ export function createPatchFunction (backend) {
     if (isDef(i)) {
       // 执行节点自定义create方法
       if (isDef(i.create)) i.create(emptyNode, vnode)
-      // FIXME: insertedVnodeQueue是什么作用
+      // 将插入的节点VNode，加入insertedVnodeQueue
+      // 目的是patch过程中插入vnode节点完毕之后，执行insert钩子
       if (isDef(i.insert)) insertedVnodeQueue.push(vnode)
     }
   }
@@ -700,14 +705,22 @@ export function createPatchFunction (backend) {
     }
   }
 
-  // FIXME: 跳过 执行insert钩子函数
+  /**
+   * 执行insert钩子函数
+   * @param {*} vnode   当前VNode渲染节点
+   * @param {*} queue   按顺序插入的VNode队列
+   * @param {*} initial 首次渲染或ssr渲染标识
+   */
   function invokeInsertHook (vnode, queue, initial) {
     // delay insert hooks for component root nodes, invoke them after the
     // element is really inserted
     if (isTrue(initial) && isDef(vnode.parent)) {
+      // 首次渲染，将VNode放入pendingInsert
       vnode.parent.data.pendingInsert = queue
     } else {
+      // 遍历执行每个VNode渲染节点的insert钩子函数
       for (let i = 0; i < queue.length; ++i) {
+        // 就是 vnode.data.hook.insert(vnode)
         queue[i].data.hook.insert(queue[i])
       }
     }
@@ -834,7 +847,7 @@ export function createPatchFunction (backend) {
    * @returns               真实DOM
    */
   return function patch (oldVnode, vnode, hydrating, removeOnly) {
-    // 删除VNode逻辑
+    // 删除VNode逻辑 $destroy执行
     if (isUndef(vnode)) {
       // vnode未定义 表明该节点已被销毁卸载
       // oldVnode定义 从旧的VNode上卸载销毁VNode本身及相关的子VNode节点 执行destroy钩子
@@ -951,6 +964,7 @@ export function createPatchFunction (backend) {
     }
 
     // 执行insert钩子函数
+    // insertedVnodeQueue在整个patch过程中是不断添加的
     invokeInsertHook(vnode, insertedVnodeQueue, isInitialPatch)
     // 返回真实DOM
     return vnode.elm

@@ -88,6 +88,7 @@ function flushSchedulerQueue () {
   for (index = 0; index < queue.length; index++) {
     watcher = queue[index]
     if (watcher.before) {
+      // watcher中有before就执行
       watcher.before()
     }
     id = watcher.id
@@ -118,6 +119,11 @@ function flushSchedulerQueue () {
 
   // call component updated and activated hooks
   callActivatedHooks(activatedQueue)
+  /**
+   * 生命周期函数 updated
+   *  执行时机：queue中的每个watcher都执行后
+   *  执行顺序：
+   */
   callUpdatedHooks(updatedQueue)
 
   // devtool hook
@@ -127,12 +133,18 @@ function flushSchedulerQueue () {
   }
 }
 
+/**
+ *  执行所有updated生命周期函数 
+ */
 function callUpdatedHooks (queue) {
   let i = queue.length
+  // 遍历执行queue中所有watcher
   while (i--) {
     const watcher = queue[i]
     const vm = watcher.vm
     if (vm._watcher === watcher && vm._isMounted && !vm._isDestroyed) {
+      // 命中：watcher是渲染watcher，且已挂载，且未销毁
+      // 生命周期函数 updated
       callHook(vm, 'updated')
     }
   }

@@ -47,7 +47,8 @@ export function initExtend (Vue: GlobalAPI) {
     // 生成cid
     Sub.cid = cid++
     // 合并生成options 
-    // 组件的默认options使用基类Vue.options和用户传入的options合并
+    // 组件的默认options使用基类Vue.options 和 用户传入的options合并
+    // 用户在extendOptions传入的components、directive、filter都会是局部的
     Sub.options = mergeOptions(
       Super.options,
       extendOptions
@@ -86,7 +87,7 @@ export function initExtend (Vue: GlobalAPI) {
     })
 
     // enable recursive self-lookup
-    // 允许访问自身
+    // 允许自查找 添加自身到components中
     if (name) {
       Sub.options.components[name] = Sub
     }
