@@ -69,7 +69,7 @@ export function renderMixin (Vue: Class<Component>) {
     return nextTick(fn, this)
   }
 
-  // vm._render最终是通过执行createElement()方法并返回的是vnode，它是一个虚拟Node
+  // vm._render最终是通过执行createElement()方法并返回的是渲染vnode，它是一个虚拟Node
   // render执行，最终会替换掉原来的节点，这也是为什么根节点不能为html或body节点
   Vue.prototype._render = function (): VNode {
     const vm: Component = this
@@ -86,18 +86,20 @@ export function renderMixin (Vue: Class<Component>) {
 
     // set parent vnode. this allows render functions to have access
     // to the data on the placeholder node.
-    // $vnode 父级vnode
+    // $vnode 当前的VNode 即 当前的占位符vnode
     vm.$vnode = _parentVnode
+
     // render self
     let vnode
     try {
       // There's no need to maintain a stack because all render fns are called
       // separately from one another. Nested component's render fns are called
       // when parent component is patched.
-      currentRenderingInstance = vm
+      currentRenderingInstance = vm // 当前渲染实例vm
       // 调用render()
       // vm._renderProxy 生产环境就是vm本身 开发环境是Proxy代理
-      // vm.$createElement render内部使用来创建vnode
+      // vm.$createElement render内部使用来创建当前的渲染vnode
+      // 当前的渲染vnode
       vnode = render.call(vm._renderProxy, vm.$createElement)
     } catch (e) {
       // 触发错误钩子函数
@@ -141,6 +143,7 @@ export function renderMixin (Vue: Class<Component>) {
       vnode = createEmptyVNode()
     }
     // set parent
+    // 当前渲染VNode的parent 指向 当前的占位符VNode
     vnode.parent = _parentVnode
     return vnode
   }

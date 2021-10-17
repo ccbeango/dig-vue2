@@ -30,15 +30,21 @@ export function initMixin (Vue: Class<Component>) {
     // a flag to avoid this being observed
     vm._isVue = true
 
-    // 将传入的options最终merge到$options上
+    // 将用户传入的options最终merge到$options上
+
     // merge options
     if (options && options._isComponent) {
       // optimize internal component instantiation
       // since dynamic options merging is pretty slow, and none of the
       // internal component options needs special treatment.
+      // 内部自调用 new Sub()的 merge options 
+      // 自调用生成的options再做合并
       initInternalComponent(vm, options)
     } else {
+      // 用户主动调用 new Vue()的merge options
+      // 把Vue构造函数vm.constructor的options和用户传入的options做一层合并，到vm.$options上
       vm.$options = mergeOptions(
+        // 返回 Vue.options
         resolveConstructorOptions(vm.constructor),
         options || {},
         vm
@@ -55,6 +61,7 @@ export function initMixin (Vue: Class<Component>) {
     }
     // expose real self
     vm._self = vm
+    // 初始化 生命周期
     initLifecycle(vm)
     initEvents(vm)
     // 初始化 render
@@ -82,12 +89,23 @@ export function initMixin (Vue: Class<Component>) {
   }
 }
 
+/**
+ * 初始化组件的$options属性
+ * @param {*} vm 
+ * @param {*} options 
+ */
 export function initInternalComponent (vm: Component, options: InternalComponentOptions) {
+  // 将组件的options作为原型赋值给组件实例的$options
   const opts = vm.$options = Object.create(vm.constructor.options)
+
+  /**
+   * 下面对组件实例的vm.$options做进一步扩展 
+   */
   // doing this because it's faster than dynamic enumeration.
   const parentVnode = options._parentVnode
-  opts.parent = options.parent
-  opts._parentVnode = parentVnode
+  // vm是当前组件实例  options._parentVnode是当前组件的VNode  options.parent 是当前组件VNode的父级组件实例
+  opts.parent = options.parent // 当前组件VNode的父级vm实例 子级最终要插入到父级上 确定层级关系
+  opts._parentVnode = parentVnode // 当前组件VNode 占位符VNode
 
   const vnodeComponentOptions = parentVnode.componentOptions
   opts.propsData = vnodeComponentOptions.propsData
@@ -101,6 +119,7 @@ export function initInternalComponent (vm: Component, options: InternalComponent
   }
 }
 
+// 处理构造函数的options 并返回
 export function resolveConstructorOptions (Ctor: Class<Component>) {
   let options = Ctor.options
   if (Ctor.super) {

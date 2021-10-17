@@ -36,6 +36,12 @@ const sharedPropertyDefinition = {
   set: noop
 }
 
+/**
+ * 定义属性的访问器属性getter setter
+ * @param {*} target 
+ * @param {*} sourceKey 
+ * @param {*} key 
+ */
 export function proxy (target: Object, sourceKey: string, key: string) {
   sharedPropertyDefinition.get = function proxyGetter () {
     return this[sourceKey][key]
@@ -186,6 +192,8 @@ const computedWatcherOptions = { lazy: true }
 function initComputed (vm: Component, computed: Object) {
   // $flow-disable-line
   const watchers = vm._computedWatchers = Object.create(null)
+  
+  // ssr的计算属性只有getter
   // computed properties are just getters during SSR
   const isSSR = isServerRendering()
 
@@ -226,25 +234,39 @@ function initComputed (vm: Component, computed: Object) {
   }
 }
 
+// 定义计算属性
 export function defineComputed (
   target: any,
   key: string,
   userDef: Object | Function
 ) {
   const shouldCache = !isServerRendering()
+
   if (typeof userDef === 'function') {
+    // 默认函数作为getter
     sharedPropertyDefinition.get = shouldCache
+      // 非服务端渲染
       ? createComputedGetter(key)
+      // 服务端渲染
       : createGetterInvoker(userDef)
     sharedPropertyDefinition.set = noop
   } else {
+    // 计算属性定义getter和setter
+
+    // 设置getter
     sharedPropertyDefinition.get = userDef.get
       ? shouldCache && userDef.cache !== false
+        // 非服务端渲染 且 需cache 
         ? createComputedGetter(key)
+        // 服务端渲染 或 无需cache
         : createGetterInvoker(userDef.get)
       : noop
+    
+    // 设置setter
     sharedPropertyDefinition.set = userDef.set || noop
   }
+
+  // 访问器属性 无setter警告
   if (process.env.NODE_ENV !== 'production' &&
       sharedPropertyDefinition.set === noop) {
     sharedPropertyDefinition.set = function () {
@@ -254,9 +276,15 @@ export function defineComputed (
       )
     }
   }
+
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
+/**
+ * 非服务端渲染的计算属性getter生成器
+ * @param {*} key 
+ * @returns 
+ */
 function createComputedGetter (key) {
   return function computedGetter () {
     const watcher = this._computedWatchers && this._computedWatchers[key]
@@ -272,6 +300,11 @@ function createComputedGetter (key) {
   }
 }
 
+/**
+ * 服务端渲染的计算属性getter生成器
+ * @param {*} fn 
+ * @returns 
+ */
 function createGetterInvoker(fn) {
   return function computedGetter () {
     return fn.call(this, this)

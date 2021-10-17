@@ -20,49 +20,73 @@ export function initExtend (Vue: GlobalAPI) {
     extendOptions = extendOptions || {}
     const Super = this
     const SuperId = Super.cid
+    // _Ctor 添加_Ctor属性，做缓存优化
+    // _Ctor的值是{ cid: VueComponent }的map映射
+    // 好处：当多个父组件都使用同一个组件，即多处使用时，同一个组件extend初始化逻辑只会执行一次
     const cachedCtors = extendOptions._Ctor || (extendOptions._Ctor = {})
     if (cachedCtors[SuperId]) {
       return cachedCtors[SuperId]
     }
 
     const name = extendOptions.name || Super.options.name
+    // 验证标签名是否有效
     if (process.env.NODE_ENV !== 'production' && name) {
       validateComponentName(name)
     }
 
+    // 寄生式组合继承 使用父类原型Super.prototype作为Sub的原型
     const Sub = function VueComponent (options) {
+      // 实例化Sub的时候，就会执行this._init逻辑，再次走到Vue实例的初始化逻辑
       this._init(options)
     }
     Sub.prototype = Object.create(Super.prototype)
     Sub.prototype.constructor = Sub
+
+    // 接下来再对Sub进行扩展
+
+    // 生成cid
     Sub.cid = cid++
+    // 合并生成options 
+    // 组件的默认options使用基类Vue.options和用户传入的options合并
     Sub.options = mergeOptions(
       Super.options,
       extendOptions
     )
+    // super指向父类Super构造函数
     Sub['super'] = Super
 
     // For props and computed properties, we define the proxy getters on
     // the Vue instances at extension time, on the extended prototype. This
     // avoids Object.defineProperty calls for each instance created.
     if (Sub.options.props) {
+      // 初始化props 每一项都定义getter、setter
+      // 将props的每一项都添加到 Sub.prototype._props上
       initProps(Sub)
     }
     if (Sub.options.computed) {
+      // 初始化computed
+      // 将computed的每一项(key)添加到Sub.prototype[key]上
       initComputed(Sub)
     }
 
     // allow further extension/mixin/plugin usage
+    // 添加全局Super上的实例（静态）方法到Sub上 让各个组件中有这些全局静态方法
     Sub.extend = Super.extend
     Sub.mixin = Super.mixin
     Sub.use = Super.use
 
     // create asset registers, so extended classes
     // can have their private assets too.
+    // 将全局Super上的component、directive、filter添加到Sub上
+    // Sub.component
+    // Sub.directive
+    // Sub.filter
     ASSET_TYPES.forEach(function (type) {
       Sub[type] = Super[type]
     })
+
     // enable recursive self-lookup
+    // 允许访问自身
     if (name) {
       Sub.options.components[name] = Sub
     }
@@ -70,16 +94,23 @@ export function initExtend (Vue: GlobalAPI) {
     // keep a reference to the super options at extension time.
     // later at instantiation we can check if Super's options have
     // been updated.
-    Sub.superOptions = Super.options
-    Sub.extendOptions = extendOptions
-    Sub.sealedOptions = extend({}, Sub.options)
+    Sub.superOptions = Super.options // 保存Super的options 更新检测使用
+    Sub.extendOptions = extendOptions // 保存扩展的原对象
+    Sub.sealedOptions = extend({}, Sub.options) // 保存sealedOptions 浅拷贝Sub.options
 
     // cache constructor
+    // 缓存 cid: Sub 的map映射
     cachedCtors[SuperId] = Sub
     return Sub
   }
 }
 
+/**
+ * 转换Comp.options.props中每一项到
+ * Comp.prototype._props上
+ * 每一项设置getter/setter
+ * @param {*} Comp 
+ */
 function initProps (Comp) {
   const props = Comp.options.props
   for (const key in props) {
@@ -87,6 +118,11 @@ function initProps (Comp) {
   }
 }
 
+/**
+ * 转换Comp.options.computed中每一项(key)到
+ * Comp.prototype[key]上
+ * @param {*} Comp 
+ */
 function initComputed (Comp) {
   const computed = Comp.options.computed
   for (const key in computed) {

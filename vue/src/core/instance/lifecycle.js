@@ -21,9 +21,13 @@ import {
 export let activeInstance: any = null
 export let isUpdatingChildComponent: boolean = false
 
+// 设置当前的 activeInstance
 export function setActiveInstance(vm: Component) {
   const prevActiveInstance = activeInstance
   activeInstance = vm
+
+  // 闭包执行 恢复之前的activeInstance
+  // 这样prevActiveInstance和activeInstance就是父子关系
   return () => {
     activeInstance = prevActiveInstance
   }
@@ -33,20 +37,31 @@ export function initLifecycle (vm: Component) {
   const options = vm.$options
 
   // locate first non-abstract parent
+  // parent 是 activeInstance
+  // 当前的vm实例要挂载到parent上
+  // parent就是当前VNode节点、当前vm实例的父级vm实例
   let parent = options.parent
   if (parent && !options.abstract) {
     while (parent.$options.abstract && parent.$parent) {
       parent = parent.$parent
     }
+
+    // 将当前vm实例添加到parent的$children中
+    // 建立实例间实际的父子级关系
     parent.$children.push(vm)
   }
 
+  // 当前父级vm
   vm.$parent = parent
+  // $root
   vm.$root = parent ? parent.$root : vm
 
+  // 当前vm实例的$children
   vm.$children = []
+  // 当前vm实例的$refs
   vm.$refs = {}
 
+  // vm实例其它内置属性
   vm._watcher = null
   vm._inactive = null
   vm._directInactive = false
@@ -56,31 +71,50 @@ export function initLifecycle (vm: Component) {
 }
 
 export function lifecycleMixin (Vue: Class<Component>) {
-
-  // _update 方法的作用是把VNode渲染成真实DOM
+  // _update 方法的作用是把渲染VNode渲染成真实DOM
   // 调用时机有两个：1. 首次渲染 2. 数据更新
+
+  // 在 vm._update 的过程中，把当前的 vm 赋值给 activeInstance，
+  // 同时通过 const prevActiveInstance = activeInstance 
+  // 用prevActiveInstance 保留上一次的 activeInstance。
+  // 实际上，prevActiveInstance 和当前的 vm 是一个父子关系，
+  // 当一个 vm 实例完成它的所有子树的 patch 或者 update 过程后，
+  // activeInstance 会回到它的父实例，
+  // 这样就完美地保证了 createComponentInstanceForVnode 整个深度遍历过程中，
+  // 我们在实例化子组件的时候能传入当前子组件的父 Vue 实例，
+  // 并在 _init 的过程中，执行initLifecycle，通过 vm.$parent 把这个父子关系保留。
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
     const vm: Component = this
     // 数据更新时使用的变量
     const prevEl = vm.$el
     const prevVnode = vm._vnode
+    // 把当前的 vm 赋值给 activeInstance 即保存当前的activeInstance 
+    // 为了保证 子组件new Sub()时，能获取到它的父级vm实例，确保在initLifecycle时，建立父子关系
+    // 这样子组件再去创建孙子组件时，孙子组件就能获取到它的父vm实例
     const restoreActiveInstance = setActiveInstance(vm)
 
-    vm._vnode = vnode
+    // vm._vnode 渲染vnode
+    vm._vnode = vnode // _vnode 是当前的渲染vnode
+    // 实例上 vm.$vnode 占位符vnode
+    // vm.$vnode 和 vm._vnode 是父子关系 （vm.$vnode是父） 
+    // 代码表达就是 vm._vnode.parent === vm.$vnode  在render.js中赋值
 
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
     // _update()方法的核心是调用__patch__()方法
     if (!prevVnode) {
       // initial render
-      // 首次渲染
+      // 首次渲染 子组件的vm.$el是undefined
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
     } else {
       // updates
       // 数据更新
       vm.$el = vm.__patch__(prevVnode, vnode)
     }
+
+    // 恢复activeInstance为当前实例
     restoreActiveInstance()
+
     // update __vue__ reference
     if (prevEl) {
       prevEl.__vue__ = null
@@ -147,7 +181,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
   }
 }
 
-// mountComponent 方法会完成整个渲染工作
+// mountComponent 方法会完成整个DOM渲染工作
 export function mountComponent (
   vm: Component,
   el: ?Element,

@@ -57,6 +57,16 @@ export function initGlobalAPI (Vue: GlobalAPI) {
     return obj
   }
 
+  /**
+   * 全局的Vue.options
+   * Vue.options = {
+   *  _base: Vue,  // 指向Vue基类构造函数本身
+   *  components: {},
+   *  directives: {},
+   *  filters: {},
+   * }
+   * 还包括用户调用 Vue.mixin() 时，混入的options
+   */
   Vue.options = Object.create(null)
   ASSET_TYPES.forEach(type => {
     Vue.options[type + 's'] = Object.create(null)
@@ -64,9 +74,11 @@ export function initGlobalAPI (Vue: GlobalAPI) {
 
   // this is used to identify the "base" constructor to extend all plain-object
   // components with in Weex's multi-instance scenarios.
+  // _base就是Vue构造函数 用于vdom/create-component/createComponent
+  // 目的是扩展普通对象组件，让它们具有Vue构造函数上定义的属性
   Vue.options._base = Vue
 
-  // 内置组件
+  // 内置组件 添加到options.components
   extend(Vue.options.components, builtInComponents)
   
   // API Vue.use

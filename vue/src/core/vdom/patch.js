@@ -160,7 +160,7 @@ export function createPatchFunction (backend) {
 
   /**
    * 将VNode挂载到真实DOM上
-   * @param {*} vnode 
+   * @param {渲染VNode|占位符VNode} vnode 渲染VNode是普通HTML标签的VNode | 占位符VNode是组件标签的VNode
    * @param {*} insertedVnodeQueue 
    * @param {*} parentElm           父节点
    * @param {*} refElm              参照节点
@@ -189,10 +189,14 @@ export function createPatchFunction (backend) {
     }
 
     vnode.isRootInsert = !nested // for transition enter check
-    // FIXME: 跳过 尝试创建组件节点
+    // 创建组件节点
+    // 判断VNode节点的是否是占位符VNode
+    // 如果是组件VNode 就创建组件VNode节点的渲染VNode
     if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
       return
     }
+
+    // 如果不是占位符VNode而是渲染VNode 执行下面逻辑
 
     const data = vnode.data
     const children = vnode.children
@@ -267,20 +271,44 @@ export function createPatchFunction (backend) {
     }
   }
 
+  /**
+   * 创建组件的占位符VNode节点
+   * @param {*} vnode 
+   * @param {*} insertedVnodeQueue 
+   * @param {*} parentElm 
+   * @param {*} refElm 
+   * @returns 
+   */
   function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
     let i = vnode.data
-    if (isDef(i)) {
+    if (isDef(i)) { // vnode.data定义 说明时组件VNode
+      // 是否是keep-alive组件
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive
+
+      // 组件的 hook中有init钩子函数  vnode.data.hook.init
       if (isDef(i = i.hook) && isDef(i = i.init)) {
+        // vdom/create-component下的componentVNodeHooks.init
+        // 执行init()钩子函数 实际上会递归地执行
+        // 因为在执行组件的createComponent时
+        // 实际上会执行 子组件的创建 -> render -> update -> patch
+        // patch过程中如果又遇到组件，就会又执行孙子组件的createComponent
+        // 递归执行，最终完成整个patch过程
+        // 所以子组件会先父组件执行init()后的逻辑，进行insert，之后执行父组件的insert
+        // 最终完成整个patch过程
         i(vnode, false /* hydrating */)
       }
+
       // after calling the init hook, if the vnode is a child component
       // it should've created a child instance and mounted it. the child
       // component also has set the placeholder vnode's elm.
       // in that case we can just return the element and be done.
+      // init后，vnode是一个占位符VNode
       if (isDef(vnode.componentInstance)) {
         initComponent(vnode, insertedVnodeQueue)
+        // 组件在这里插入真实DOM节点 整个插入顺序是先子后父 原因在 hook.init() 执行
         insert(parentElm, vnode.elm, refElm)
+
+        // FIXME: 跳过keep-alive包裹组件处理
         if (isTrue(isReactivated)) {
           reactivateComponent(vnode, insertedVnodeQueue, parentElm, refElm)
         }
@@ -289,12 +317,16 @@ export function createPatchFunction (backend) {
     }
   }
 
+  // FIXME: 跳过 初始化组件
   function initComponent (vnode, insertedVnodeQueue) {
     if (isDef(vnode.data.pendingInsert)) {
       insertedVnodeQueue.push.apply(insertedVnodeQueue, vnode.data.pendingInsert)
       vnode.data.pendingInsert = null
     }
+
+    // 将VNode上的componentInstance的真实DOM $el 赋值给elm
     vnode.elm = vnode.componentInstance.$el
+
     if (isPatchable(vnode)) {
       invokeCreateHooks(vnode, insertedVnodeQueue)
       setScope(vnode)
@@ -796,7 +828,7 @@ export function createPatchFunction (backend) {
   /**
    * 递归创建一个完整的DOM树并插入到Body上
    * @param {*} oldVnode    旧的VNode节点 可以不存在或是一个DOM对象或是一个VNode
-   * @param {*} vnode       执行_render后返回的VNode的节点
+   * @param {*} vnode       执行_render后返回的VNode的节点 占位符VNode或渲染VNode
    * @param {*} hydrating   是否是服务端渲染 
    * @param {*} removeOnly  transition-group组件使用参数
    * @returns               真实DOM
@@ -813,9 +845,11 @@ export function createPatchFunction (backend) {
     let isInitialPatch = false
     const insertedVnodeQueue = []
 
-    if (isUndef(oldVnode)) {     // FIXME: 跳过旧节点未定义阅读
+    if (isUndef(oldVnode)) {
       // empty mount (likely as component), create new root element
+      // 首次渲染的 组件 oldVnode为undefined
       isInitialPatch = true
+      // 创建渲染VNode的DOM
       createElm(vnode, insertedVnodeQueue)
     } else {
       // nodeType判断是否是真实DOM节点
@@ -863,7 +897,7 @@ export function createPatchFunction (backend) {
         const parentElm = nodeOps.parentNode(oldElm)
 
         // create new node
-        // 创建vnode节点以及该节点的所有子节点的真实DOM节点
+        // 创建vnode节点以及该节点的所有子节点的真实DOM节点 递归创建 先子后父
         createElm(
           vnode,
           insertedVnodeQueue,
