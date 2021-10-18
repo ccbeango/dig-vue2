@@ -77,7 +77,7 @@ export default class VNode {
   }
 }
 
-// 创建一个空注释占位节点 即一个空VNode节点
+// 创建一个空注释占位VNode节点
 export const createEmptyVNode = (text: string = '') => {
   const node = new VNode()
   node.text = text

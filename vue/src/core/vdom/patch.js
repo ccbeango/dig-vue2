@@ -282,7 +282,7 @@ export function createPatchFunction (backend) {
    */
   function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
     let i = vnode.data
-    if (isDef(i)) { // vnode.data定义 说明时组件VNode
+    if (isDef(i)) { // vnode.data定义 说明是组件VNode
       // 是否是keep-alive组件
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive
 

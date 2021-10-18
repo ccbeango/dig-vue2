@@ -130,6 +130,15 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // updated in a parent's updated hook.
   }
 
+  /**
+   * 调用渲染 watcher 的 update 方法，让渲染 watcher 对应的回调函数执行，也就是触发了组件的重新渲染
+   * 之所以这么做是因为Vue通常是数据驱动视图重新渲染，但是在整个异步组件加载过程中是没有数据发生变化的，
+   * 所以通过执行 $forceUpdate 可以强制组件重新渲染一次
+   * 
+   * 强制执行渲染watcher的update
+   *  最终会执行到updateComponent vm._update(vm._render(), hydrating)
+   *  再执行patch
+   */
   Vue.prototype.$forceUpdate = function () {
     const vm: Component = this
     if (vm._watcher) {

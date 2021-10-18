@@ -160,15 +160,23 @@ export function createComponent (
   }
 
   // async component
-  // FIXME: 跳过 异步组件处理
+  // 异步组件处理
   let asyncFactory
-  if (isUndef(Ctor.cid)) {
+  if (isUndef(Ctor.cid)) { // 异步组件是一个工厂函数 没有cid属性
+    // 如果是第一次执行 resolveAsyncComponent，
+    // 除非使用高级异步组件 0 delay 去创建了一个 loading 组件，
+    // 否则返回是 undefiend，接着通过createAsyncPlaceholder创建一个注释节点作为占位符
     asyncFactory = Ctor
+    // 处理工厂函数的异步组件 工厂函数会去加载这个异步组件
     Ctor = resolveAsyncComponent(asyncFactory, baseCtor)
+    // 异步组件第一次执行返回的Ctor为undefined
     if (Ctor === undefined) {
       // return a placeholder node for async component, which is rendered
       // as a comment node but preserves all the raw information for the node.
       // the information will be used for async server-rendering and hydration.
+      // 异步组件第一次执行，是同步执行的，会执行到这里，返回一个注释节点VNode，最终在DOM中渲染成一个注释节点
+      // 创建一个异步组件的注释VNode占位符 但把asyncFactory和asyncMeta赋值给当前VNode
+      // resolveAsyncComponent再调用resolve，会forceRender会第二次执行
       return createAsyncPlaceholder(
         asyncFactory,
         data,
@@ -177,6 +185,8 @@ export function createComponent (
         tag
       )
     }
+
+    // 第二次执行的异步组件走下面的逻辑，和同步组件相同
   }
 
   data = data || {}

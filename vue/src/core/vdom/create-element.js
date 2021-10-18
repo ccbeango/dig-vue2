@@ -141,8 +141,19 @@ export function _createElement (
         undefined, undefined, context
       )
     } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) { // 组件标签
+      /**
+       * 注册的全局组件或局部组件标签 命中这里
+       * 组件是同步组件 或 异步组件
+       * 创建组件类型的VNode
+       * 
+       * 同步组件：
+       *  vnode是 同步组件的占位符VNode节点
+       * 
+       * 异步组件：
+       * 1. 第一次执行到这里，得到的vnode是一个注释VNode占位符节点 它内部会调用$forceUpdate 然后会再次执行到这里
+       * 2. 第二次执行到这里，得到的vnode是一个组件VNode占位符节点
+       */
       // component
-      // 注册的全局组件或局部组件标签 创建组件类型VNode
       vnode = createComponent(Ctor, data, context, children, tag)
     } else {
       // unknown or unlisted namespaced elements

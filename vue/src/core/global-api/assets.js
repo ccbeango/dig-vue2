@@ -25,6 +25,7 @@ export function initAssetRegisters (Vue: GlobalAPI) {
           validateComponentName(id)
         }
 
+        // 全局同步组件
         if (type === 'component' && isPlainObject(definition)) {
           // 有name，使用name作为组件名，否则使用id作为组件名
           definition.name = definition.name || id
@@ -32,11 +33,16 @@ export function initAssetRegisters (Vue: GlobalAPI) {
           definition = this.options._base.extend(definition)
         }
 
+        // 全局指令
         if (type === 'directive' && typeof definition === 'function') {
           definition = { bind: definition, update: definition }
         }
 
-        // 对全局Vue.options进行扩展
+        /**
+         * 对全局Vue.options进行扩展
+         *  filter 直接赋值
+         *  异步组件 直接赋值
+         */
         this.options[type + 's'][id] = definition
         // 返回调用asset函数后的definition
         return definition
