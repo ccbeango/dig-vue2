@@ -70,6 +70,14 @@ export function initLifecycle (vm: Component) {
   vm._isBeingDestroyed = false
 }
 
+/**
+ * 混入lifecycle相关属性和方法
+ *  属性：
+ *  方法：
+ *    Vue.prototype._update()
+ *    Vue.prototype.$forceUpdate()
+ *    Vue.prototype.$destroy()
+ */
 export function lifecycleMixin (Vue: Class<Component>) {
   // _update 方法的作用是把渲染VNode渲染成真实DOM
   // 调用时机有两个：1. 首次渲染 2. 数据更新

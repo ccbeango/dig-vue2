@@ -61,8 +61,19 @@ export function setCurrentRenderingInstance (vm: Component) {
   currentRenderingInstance = vm
 }
 
+/**
+ * 混入render相关属性和方法
+ *  属性：
+ *    内部属性 (render-helpers)
+ *  方法：
+ *    内部方法 (render-helpers)
+ *    Vue.prototype._render
+ *    Vue.prototype.$nextTick
+ *    
+ */
 export function renderMixin (Vue: Class<Component>) {
   // install runtime convenience helpers
+  // 原型上添加render相关的内部方法
   installRenderHelpers(Vue.prototype)
 
   // $nextTick

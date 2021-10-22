@@ -18,6 +18,14 @@ type PropOptions = {
   validator: ?Function
 };
 
+/**
+ * 验证props中的key
+ * @param {*} key 
+ * @param {*} propOptions 
+ * @param {*} propsData 
+ * @param {*} vm 
+ * @returns 
+ */
 export function validateProp (
   key: string,
   propOptions: Object,

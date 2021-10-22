@@ -1,6 +1,7 @@
 /*
  * not type checking this file because flow doesn't play well with
  * dynamically accessing methods on Array prototype
+ * 对Array原型上的几个API进行增强
  */
 
 import { def } from '../util/index'
@@ -20,6 +21,7 @@ const methodsToPatch = [
 
 /**
  * Intercept mutating methods and emit events
+ * 使用继承，对Array原型上的一些方法(methodsToPatch)重写
  */
 methodsToPatch.forEach(function (method) {
   // cache original method

@@ -183,6 +183,7 @@ export const capitalize = cached((str: string): string => {
 
 /**
  * Hyphenate a camelCase string.
+ *  将驼峰字符串转成连字符字符串
  */
 const hyphenateRE = /\B([A-Z])/g
 export const hyphenate = cached((str: string): string => {
@@ -195,6 +196,7 @@ export const hyphenate = cached((str: string): string => {
  * since native bind is now performant enough in most browsers.
  * But removing it would mean breaking code that was able to run in
  * PhantomJS 1.x, so this must be kept for backward compatibility.
+ * 向后兼容方法
  */
 
 /* istanbul ignore next */
@@ -216,6 +218,9 @@ function nativeBind (fn: Function, ctx: Object): Function {
   return fn.bind(ctx)
 }
 
+/**
+ * bind()方法
+ */
 export const bind = Function.prototype.bind
   ? nativeBind
   : polyfillBind

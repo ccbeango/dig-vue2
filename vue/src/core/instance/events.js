@@ -49,6 +49,13 @@ export function updateComponentListeners (
   target = undefined
 }
 
+/**
+ * 混入events相关原型方法
+ *    Vue.prototype.$on() 
+ *    Vue.prototype.$once() 
+ *    Vue.prototype.$off() 
+ *    Vue.prototype.$emit() 
+ */
 export function eventsMixin (Vue: Class<Component>) {
   const hookRE = /^hook:/
   Vue.prototype.$on = function (event: string | Array<string>, fn: Function): Component {
