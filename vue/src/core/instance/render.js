@@ -108,10 +108,15 @@ export function renderMixin (Vue: Class<Component>) {
       // separately from one another. Nested component's render fns are called
       // when parent component is patched.
       currentRenderingInstance = vm // 当前渲染实例vm
-      // 调用render()
-      // vm._renderProxy 生产环境就是vm本身 开发环境是Proxy代理
-      // vm.$createElement render内部使用来创建当前的渲染vnode
-      // 当前的渲染vnode
+      /**
+       * 调用render()
+       * vm._renderProxy 生产环境就是vm本身 开发环境是Proxy代理
+       * vm.$createElement render内部使用来创建当前的渲染vnode
+       * vnode是当前的渲染vnode
+       * 
+       * 在执行render()函数过程中，就会访会触发在模板中的所有getter数据，
+       * 此时就是访问的响应式getter，这样实际上已经完成了一个依赖收集的过程
+       */
       vnode = render.call(vm._renderProxy, vm.$createElement)
     } catch (e) {
       // 触发错误钩子函数

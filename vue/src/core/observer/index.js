@@ -191,6 +191,9 @@ export function defineReactive (
   customSetter?: ?Function,
   shallow?: boolean
 ) {
+  // 实例化dep 创建数据key的依赖收集实例Dep
+  // 关注该数据key的Watcher会订阅此Dep
+  // Dep.subs中是订阅了此数据的Watcher
   const dep = new Dep()
 
   const property = Object.getOwnPropertyDescriptor(obj, key)
@@ -208,7 +211,7 @@ export function defineReactive (
     val = obj[key]
   }
 
-  // 递归调用 observe()
+  // childObserver  递归调用observe()
   let childOb = !shallow && observe(val)
 
   // 定义key为访问器属性
@@ -219,8 +222,14 @@ export function defineReactive (
       // 执行原key的getter
       const value = getter ? getter.call(obj) : val
 
-      if (Dep.target) {
+      // 依赖收集处理
+      if (Dep.target) { // 当前key有Watcher
+        /**
+         * 调用dep的append()
+         *  会调用Watcher.addDep()
+         */
         dep.depend()
+
         if (childOb) {
           childOb.dep.depend()
           if (Array.isArray(value)) {
@@ -228,6 +237,8 @@ export function defineReactive (
           }
         }
       }
+
+      // 返回访问值
       return value
     },
     set: function reactiveSetter (newVal) { // 派发更新
