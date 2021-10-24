@@ -47,8 +47,12 @@ export default class Dep {
       // subs aren't sorted in scheduler if not running async
       // we need to sort them now to make sure they fire in correct
       // order
+      // 非生产环境且非异步更新的Watcher队列sub是未排序的，
+      // 在这里进行排序以便能以正确的顺序处理 
       subs.sort((a, b) => a.id - b.id)
     }
+
+    // 遍历订阅者队列subs，触发所有Watcher.update()
     for (let i = 0, l = subs.length; i < l; i++) {
       subs[i].update()
     }

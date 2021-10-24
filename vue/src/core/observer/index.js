@@ -241,6 +241,7 @@ export function defineReactive (
       // 返回访问值
       return value
     },
+    // 当我们修改数据的时候，触发setter，可以对相关的依赖派发更新
     set: function reactiveSetter (newVal) { // 派发更新
       // 执行原key的getter得到旧value
       const value = getter ? getter.call(obj) : val
@@ -273,8 +274,9 @@ export function defineReactive (
         val = newVal
       }
 
+      // childObserver 新值也变成响应式的
       childOb = !shallow && observe(newVal)
-
+      // 派发更新 通知所有的订阅者Watcher
       dep.notify()
     }
   })

@@ -144,8 +144,9 @@ export default class Watcher {
     try {
       /**
        * 执行getter
-       *  1. $mount()时就是mountComponent()中的updateComponent()，进行DOM渲染
-       *     并完成当前vm的数据依赖收集
+       *  1. 渲染Watcher $mount()时就是mountComponent()中的updateComponent()，
+       *     进行DOM渲染，并完成当前vm的数据依赖收集
+       *  2. 用户自定义Watcher
        */
       value = this.getter.call(vm, vm)
     } catch (e) {
@@ -242,10 +243,14 @@ export default class Watcher {
   update () {
     /* istanbul ignore else */
     if (this.lazy) {
+      // lazy
       this.dirty = true
     } else if (this.sync) {
+      // 同步Watcher使用
       this.run()
     } else {
+      // 渲染Watcher
+      // 一般的组件数据更新都走到这里
       queueWatcher(this)
     }
   }
@@ -256,6 +261,10 @@ export default class Watcher {
    */
   run () {
     if (this.active) {
+      /**
+       * 对Watcher进行重新求值
+       *  1. 渲染Watcher会重新渲染
+       */
       const value = this.get()
       if (
         value !== this.value ||
@@ -265,13 +274,20 @@ export default class Watcher {
         isObject(value) ||
         this.deep
       ) {
+        /**
+         * 1. 新值和旧值不相等 (用户自定义Watcher)
+         * 2. 或 新值是对象
+         * 3. 或 deep为真
+         */
         // set new value
         const oldValue = this.value
         this.value = value
         if (this.user) {
+          // UserWatcher 用户自定义Watcher，执行回调并处理错误
           const info = `callback for watcher "${this.expression}"`
           invokeWithErrorHandling(this.cb, this.vm, [value, oldValue], this.vm, info)
         } else {
+          // 执行渲染Watcher的回调 noop()
           this.cb.call(this.vm, value, oldValue)
         }
       }
