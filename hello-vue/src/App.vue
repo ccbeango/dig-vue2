@@ -6,7 +6,9 @@
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+// import HelloWorld from './components/HelloWorld-检测变化注意事项.vue'
+// import HelloWorld from './components/HelloWorld-依赖收集_派发更新_nextTick.vue'
+import HelloWorld from './components/HelloWorld-检测变化注意事项.vue'
 
 export default {
   name: 'App',
