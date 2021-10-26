@@ -72,8 +72,6 @@ export function initState (vm: Component) {
   } else {
     observe(vm._data = {}, true /* asRootData */)
   }
-
-  // FIXME：跳过
   // 初始化 computed
   if (opts.computed) initComputed(vm, opts.computed)
   // 初始化 watch
@@ -257,20 +255,28 @@ export function getData (data: Function, vm: Component): any {
   }
 }
 
+/**
+ * 计算Watcher的Options
+ */
 const computedWatcherOptions = { lazy: true }
-
+/**
+ * 初始化计算属性
+ * @param {*} vm 
+ * @param {*} computed 
+ */
 function initComputed (vm: Component, computed: Object) {
   // $flow-disable-line
   const watchers = vm._computedWatchers = Object.create(null)
   
-  // ssr的计算属性只有getter
   // computed properties are just getters during SSR
-  const isSSR = isServerRendering()
+  const isSSR = isServerRendering() // 是否是ssr渲染
 
   for (const key in computed) {
     const userDef = computed[key]
+    // 获取用户定义的getter
     const getter = typeof userDef === 'function' ? userDef : userDef.get
     if (process.env.NODE_ENV !== 'production' && getter == null) {
+      // 计算属性未定义getter警告
       warn(
         `Getter is missing for computed property "${key}".`,
         vm
@@ -279,6 +285,12 @@ function initComputed (vm: Component, computed: Object) {
 
     if (!isSSR) {
       // create internal watcher for the computed property.
+      /**
+       * 创建计算Watcher
+       *  使用用户定义的计算属性的key，保存到vm._computedWatchers
+       *  用户定义的getter，作为Watcher.getter()
+       *  计算Watcher的options参数 { lazy: true } 保证初始化时不计算getter
+       */
       watchers[key] = new Watcher(
         vm,
         getter || noop,
@@ -291,8 +303,10 @@ function initComputed (vm: Component, computed: Object) {
     // component prototype. We only need to define computed properties defined
     // at instantiation here.
     if (!(key in vm)) {
+      // 组件定义中的计算属性已经在初始化时添加到了原型中，这边只需要定义实例化时的计算属性
       defineComputed(vm, key, userDef)
     } else if (process.env.NODE_ENV !== 'production') {
+      // data props methods中与计算属性中定义相同的key，提示警告
       if (key in vm.$data) {
         warn(`The computed property "${key}" is already defined in data.`, vm)
       } else if (vm.$options.props && key in vm.$options.props) {
@@ -399,7 +413,7 @@ function initMethods (vm: Component, methods: Object) {
   for (const key in methods) {
     if (process.env.NODE_ENV !== 'production') {
       if (typeof methods[key] !== 'function') {
-        // 函数为定义警告
+        // 非函数定义警告
         warn(
           `Method "${key}" has type "${typeof methods[key]}" in the component definition. ` +
           `Did you reference the function correctly?`,
@@ -423,7 +437,7 @@ function initMethods (vm: Component, methods: Object) {
     }
     /**
      * 将methds中的方法添加到vm实例上
-     *  1. method[key]不是函数赋值未空操作noop
+     *  1. method[key]不是函数赋值为空操作noop
      *  2. method[key]是函数，method[key].bind(vm) 绑定函数this为vm实例
      */
     vm[key] = typeof methods[key] !== 'function' ? noop : bind(methods[key], vm)

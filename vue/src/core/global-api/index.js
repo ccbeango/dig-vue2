@@ -47,6 +47,7 @@ export function initGlobalAPI (Vue: GlobalAPI) {
     defineReactive
   }
 
+  // 全局静态方法
   Vue.set = set
   Vue.delete = del
   Vue.nextTick = nextTick

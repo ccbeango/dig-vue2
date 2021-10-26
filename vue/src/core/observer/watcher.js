@@ -124,10 +124,9 @@ export default class Watcher {
       }
     }
 
-    // 非lazy下调用this.get()
-    this.value = this.lazy
+    this.value = this.lazy // 计算属性Watcher，lazy为true
       ? undefined
-      // 对Watcher求值
+      // 非lazy下调用this.get() 对Watcher求值
       : this.get()
   }
 
