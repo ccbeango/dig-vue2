@@ -251,10 +251,19 @@ export function defineReactive (
       // 执行原key的getter
       const value = getter ? getter.call(obj) : val
 
+      /**
+       * 依赖收集
+       *    key是当前正在计算的Watcher即Dep.target关注的，
+       *    当前Watcher会订阅此数据的变化，即触发这个key的Dep依赖收集
+       * 订阅此key的Dep的Watcher会是不同类型的
+       *  1. renderWatcher，key变化触发渲染，订阅此key的Dep
+       *  2. computedWatcher，key的变化触发计算属性的重新计算，订阅此key的Dep
+       *  3. userWatcher，key的变化触发侦听属性，订阅此key的Dep
+       */
       // 依赖收集处理
-      if (Dep.target) { // 当前key有Watcher
+      if (Dep.target) {
         /**
-         * 调用dep的append()
+         * 调用dep的append()，收集关注此key的Watcher到依赖收集实例Dep中，即Dep.subs中
          *  会调用Watcher.addDep()
          */
         dep.depend()
@@ -316,7 +325,7 @@ export function defineReactive (
 
       // childObserver 新值也变成响应式的
       childOb = !shallow && observe(newVal)
-      // 派发更新 通知所有的订阅者Watcher
+      // 派发更新 通知所有的订阅者Watcher数据发生了变化
       dep.notify()
     }
   })

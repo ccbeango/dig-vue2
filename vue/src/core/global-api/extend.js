@@ -59,8 +59,7 @@ export function initExtend (Vue: GlobalAPI) {
     // For props and computed properties, we define the proxy getters on
     // the Vue instances at extension time, on the extended prototype. This
     // avoids Object.defineProperty calls for each instance created.
-    // 调用extend时传入的props
-    // 这样可以避免每次实例化时都对props中的每个key进行proxy代理设置
+    // props和computed，定义到原型上实现共享，这样可以避免每次实例化时都对props中的每个key进行proxy代理设置
     if (Sub.options.props) {
       // 为每一个props的值添加代理
       initProps(Sub)

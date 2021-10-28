@@ -110,7 +110,7 @@ function flushSchedulerQueue () {
     // 将执行的Watcher的id记录置为null
     has[id] = null
     
-    // 重新执行Watcher
+    // 重新执行Watcher Watcher是渲染Watcher或userWatcher
     watcher.run()
 
     // in dev build, check and stop circular updates.

@@ -35,7 +35,7 @@ export default class Dep {
   // 记录数据和Watcher之间的依赖关系
   depend () {
     if (Dep.target) {
-      // 调用Watcher.addDep(this)
+      // 调用当前正在计算的Watcher.addDep(this) 再添加一遍当前Watcher的数据依赖Dep
       Dep.target.addDep(this)
     }
   }

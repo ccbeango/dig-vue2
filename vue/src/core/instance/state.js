@@ -256,7 +256,7 @@ export function getData (data: Function, vm: Component): any {
 }
 
 /**
- * 计算Watcher的Options
+ * computedWatcher的Options
  */
 const computedWatcherOptions = { lazy: true }
 /**
@@ -266,6 +266,7 @@ const computedWatcherOptions = { lazy: true }
  */
 function initComputed (vm: Component, computed: Object) {
   // $flow-disable-line
+  // 创建保存computedWatcher的空对象
   const watchers = vm._computedWatchers = Object.create(null)
   
   // computed properties are just getters during SSR
@@ -273,7 +274,7 @@ function initComputed (vm: Component, computed: Object) {
 
   for (const key in computed) {
     const userDef = computed[key]
-    // 获取用户定义的getter
+    // 获取用户定义的计算属性的getter
     const getter = typeof userDef === 'function' ? userDef : userDef.get
     if (process.env.NODE_ENV !== 'production' && getter == null) {
       // 计算属性未定义getter警告
@@ -286,10 +287,10 @@ function initComputed (vm: Component, computed: Object) {
     if (!isSSR) {
       // create internal watcher for the computed property.
       /**
-       * 创建计算Watcher
+       * 创建computedWatcher
        *  使用用户定义的计算属性的key，保存到vm._computedWatchers
        *  用户定义的getter，作为Watcher.getter()
-       *  计算Watcher的options参数 { lazy: true } 保证初始化时不计算getter
+       *  computedWatcher的options参数 { lazy: true } 保证初始化时不计算getter
        */
       watchers[key] = new Watcher(
         vm,
@@ -333,12 +334,13 @@ export function defineComputed (
   const shouldCache = !isServerRendering()
 
   if (typeof userDef === 'function') {
-    // 默认函数作为getter
+    // 定义getter 默认函数作为getter
     sharedPropertyDefinition.get = shouldCache
       // 非服务端渲染
       ? createComputedGetter(key)
       // 服务端渲染
       : createGetterInvoker(userDef)
+    // 定义setter
     sharedPropertyDefinition.set = noop
   } else {
     // 计算属性定义getter和setter
@@ -377,13 +379,29 @@ export function defineComputed (
  * @returns 
  */
 function createComputedGetter (key) {
+  // 返回计算属性的getter
   return function computedGetter () {
     const watcher = this._computedWatchers && this._computedWatchers[key]
     if (watcher) {
       if (watcher.dirty) {
+        // dirty为true，表示computedWatcher需要求值
+        // 当一次渲染中多次访问同一个计算属性，除第一次访问外，访问dirty都是false，避免重复计算
+        // computedWatcher会触发它关注的数据属性key的Dep进行依赖收集
+        // 达到computedWatcher订阅关注的数据属性key的Dep
+        // Dep是key的依赖收集实例 Dep.subs = [ fullName的computedWatcher ]
         watcher.evaluate()
       }
+
       if (Dep.target) {
+        /**
+         * Dep.target是关注此computedWatcher的Watcher，Watcher是渲染Watcher或userWatcher：
+         *  1. 渲染Watcher 调用computedWatcher.depend，最终会触发渲染Watcher
+         *     也订阅此计算属性关注的数据属性key的Dep，那么就达到了key发生变化，
+         *     就会触发computedWatcher和渲染Watcher
+         *     Dep是key的依赖收集实例 Dep.subs = [ fullName的computedWatcher，关注fullName变化的渲染Watcher ]
+         *  2. userWatcher userWatcher执行和上面渲染Watcher相同的逻辑，完成对此key的Dep的订阅
+         *     Dep是key的依赖收集实例 Dep.subs = [ fullName的computedWatcher，关注fullName变化的userWatcher ]
+         */
         watcher.depend()
       }
       return watcher.value
@@ -444,10 +462,26 @@ function initMethods (vm: Component, methods: Object) {
   }
 }
 
+/**
+ * 初始化 watch
+ * @param {*} vm 
+ * @param {*} watch 
+ */
 function initWatch (vm: Component, watch: Object) {
+  /**
+   * watch的key是要观察的：
+   *  1. 一个字符串表达式 'a' 'a.b.c' 
+   *  2. 一个函数计算结果的变化  组件中watch不可用，仅在$watch时可使用
+   * 回调handler可以是
+   *  1. 函数名字符串
+   *  2. 普通函数
+   *  3. 对象 { handler, deep, immediate }
+   *  4. 数组 元素是1 2 3的任意类型
+   */
   for (const key in watch) {
     const handler = watch[key]
     if (Array.isArray(handler)) {
+      // watch的回调是一个回调数组
       for (let i = 0; i < handler.length; i++) {
         createWatcher(vm, key, handler[i])
       }
@@ -457,6 +491,15 @@ function initWatch (vm: Component, watch: Object) {
   }
 }
 
+/**
+ * 创建userWatcher
+ *  本质是将数据进行标准化处理，最终调用$watch方法
+ * @param {*} vm 
+ * @param {*} expOrFn 要侦听的表达式或函数
+ * @param {*} handler 侦听回调 是普通函数、对象 或 字符串
+ * @param {*} options { deep, immediate, handler }
+ * @returns 
+ */
 function createWatcher (
   vm: Component,
   expOrFn: string | Function,
@@ -464,12 +507,17 @@ function createWatcher (
   options?: Object
 ) {
   if (isPlainObject(handler)) {
+    // handler是对象
     options = handler
     handler = handler.handler
   }
+  
   if (typeof handler === 'string') {
+    // handler是字符串
+    // 此时handler已经经过代理，是vm实例上的一个属性，handler定义在methods中
     handler = vm[handler]
   }
+  // 调用$watch方法
   return vm.$watch(expOrFn, handler, options)
 }
 
@@ -511,6 +559,7 @@ export function stateMixin (Vue: Class<Component>) {
   // 设置响应式 $set和$delete方法
   Vue.prototype.$set = set
   Vue.prototype.$delete = del
+
   // 设置 $watch方法
   Vue.prototype.$watch = function (
     expOrFn: string | Function,
@@ -519,17 +568,32 @@ export function stateMixin (Vue: Class<Component>) {
   ): Function {
     const vm: Component = this
     if (isPlainObject(cb)) {
+      // cb是对象，直接调用$watch会命中
+      // createWatcher会重新调用$watch，将cb处理成一个普通函数
       return createWatcher(vm, expOrFn, cb, options)
     }
+
     options = options || {}
     options.user = true
+
+    /**
+     * 创建userWatcher
+     * 并对侦听的属性收集依赖，让这些属性的Dep.subs中有userWatcher，
+     * 以便这些监听的属性发生变更的时候，能触发用户定义的回调执行
+     */
     const watcher = new Watcher(vm, expOrFn, cb, options)
+
     if (options.immediate) {
+      // 立即执行userWatcher的用户定义handler一次
       const info = `callback for immediate watcher "${watcher.expression}"`
+      // 此时将正在计算的Watcher Dep.target设置成undefined，
+      // immediate为true，立即计算时，正在计算的渲染Watcher不关注此属性
       pushTarget()
       invokeWithErrorHandling(cb, vm, [watcher.value], vm, info)
       popTarget()
     }
+
+    // 返回销毁userWatcher的函数
     return function unwatchFn () {
       watcher.teardown()
     }

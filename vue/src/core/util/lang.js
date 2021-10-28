@@ -37,12 +37,23 @@ export function parsePath (path: string): any {
   if (bailRE.test(path)) {
     return
   }
+  // 将字符串分隔 a.b.c => [a, b, c]
   const segments = path.split('.')
+
+  /**
+   * 闭包函数
+   *   调用时，将segments中的元素作为key，循环遍历访问到最后要获取的值c并返回
+   *   1. userWatcher调用此方法，获取getter，执行getter时，obj = vm，最后访问到vm.a.b.c的值
+   */
   return function (obj) {
     for (let i = 0; i < segments.length; i++) {
       if (!obj) return
+      // obj = a.b.c -> obj = b.c -> obj = c
+      // obj[segments[i]]访问值时，会触发该值的Dep进行依赖收集，完成userWatcher对这个值的订阅
+      // 当这个值发生变化，就会触发userWatcer重新计算
       obj = obj[segments[i]]
     }
+    // 返回要访问的a.b.c的值
     return obj
   }
 }

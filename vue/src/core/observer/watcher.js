@@ -70,32 +70,48 @@ export default class Watcher {
     }
     // 将当前watcher添加到vm实例的_watchers数组中
     vm._watchers.push(this)
+
     // options
     if (options) {
+      /**
+       * Watcher实例化时options
+       *  1. deep   侦听属性的userWatcher深度监听标志位
+       *  2. user   侦听属性的userWatcher标志位
+       *  3. lazy   计算属性的computedWatcher标志位
+       *  4. sync   侦听属性的userWatcher同步执行标志位 默认的所有类型Watcher都是异步执行的
+       *  5. before 渲染Watcher执行run前的回调函数，触发beforeUpdate生命周期函数
+       */
       this.deep = !!options.deep
       this.user = !!options.user
       this.lazy = !!options.lazy
       this.sync = !!options.sync
       this.before = options.before
     } else {
+      // options未传值 默认都为false
       this.deep = this.user = this.lazy = this.sync = false
     }
 
+    // Watcher的回调函数
     this.cb = cb
+    // Watcher唯一标识id
     this.id = ++uid // uid for batching
     this.active = true
+    // computedWatcher使用此标志位 来决定是否evaluate()
     this.dirty = this.lazy // for lazy watchers
     
     /**
      * Watcher和Dep之间的关系：
+     *  Watcher会依赖很多数据，所以会订阅数据的Dep
      *  1. Watcher会订阅自己关注的依赖数据Dep，数据变化时，Dep会通知Watcer；
      *     这个订阅关系存储在Dep.subs中
      *  2. 一个Watcher会关注多个依赖数据Dep，因为一个vm实例中会有很多用户的数据；
-     *     一个Dep中也会有多个订阅Watcher，因为一个数据可能有多个Watcher关注
+     *     一个Dep中也会有多个订阅Watcher，因为一个数据可能被多个Watcher关注
      * 
      * Dep相关属性
      *  1. this.deps和this.newDeps表示Watcher实例持有的Dep实例的数组
      *  2. this.depIds和this.newDepIds分别代表this.deps和this.newDeps的id Set
+     * 
+     * this.deps保存了此Watcher关注的依赖数据Dep；Dep中又保存了订阅此Dep的Watcher
      */
     this.deps = [] // 旧的Dep实例的数组
     this.newDeps = [] // 新的Dep实例的数组
@@ -111,10 +127,14 @@ export default class Watcher {
       // expOrFn是函数，将它赋值给getter
       this.getter = expOrFn
     } else {
-      // 解析expOrFn，赋值给getter
+      /**
+       * 解析expOrFn，赋值给getter
+       *  userWatcher使用来解析字符串表达式，如a.b.c
+       */
       this.getter = parsePath(expOrFn)
       if (!this.getter) {
         this.getter = noop
+        // expOrFn作为字符串，只能是用点分隔符连接
         process.env.NODE_ENV !== 'production' && warn(
           `Failed watching path: "${expOrFn}" ` +
           'Watcher only accepts simple dot-delimited paths. ' +
@@ -124,9 +144,14 @@ export default class Watcher {
       }
     }
 
-    this.value = this.lazy // 计算属性Watcher，lazy为true
+    this.value = this.lazy
+      // 计算属性computedWatcher不立即求值 
       ? undefined
-      // 非lazy下调用this.get() 对Watcher求值
+      /**
+       * 非lazy下直接进行一次Watcher求值
+       *  1. renderWatcher
+       *  2. userWatcher
+       */
       : this.get()
   }
 
@@ -135,7 +160,7 @@ export default class Watcher {
    * 依赖收集
    */
   get () {
-    // 将当前的渲染Watcher，作为当前正在计算的Watcher 
+    // 将当前的Watcher，作为当前正在计算的Watcher 
     pushTarget(this)
 
     let value
@@ -143,9 +168,11 @@ export default class Watcher {
     try {
       /**
        * 执行getter
-       *  1. 渲染Watcher $mount()时就是mountComponent()中的updateComponent()，
+       *  1. renderWatcher 渲染Watcher $mount()时getter就是mountComponent()中的updateComponent()，
        *     进行DOM渲染，并完成当前vm的数据依赖收集
-       *  2. 用户自定义Watcher
+       *  2. userWatcher 用户定义的侦听属性的Watcher 执行获取侦听的key的值
+       *  3. computedWatcher 计算属性的Watcher 执行用户定义的计算属性的函数
+       * getter中访问到的数据，会触发这些数据的getter，那么会触发当前Watcher关注的数据的Dep进行依赖收集
        */
       value = this.getter.call(vm, vm)
     } catch (e) {
@@ -158,7 +185,8 @@ export default class Watcher {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
       if (this.deep) {
-        // 递归去访问 value，触发它所有子项的 getter
+        // 深度监听，对value进行递归访问，触发它所有子项的getter
+        // 完成value的所有属性都对userWatcher进行依赖收集
         traverse(value)
       }
       // 当前vm的数据依赖收集已经完成，那么对应的渲染Dep.target也需要改变
@@ -241,15 +269,14 @@ export default class Watcher {
    */
   update () {
     /* istanbul ignore else */
-    if (this.lazy) {
-      // lazy
+    if (this.lazy) {  // lazy为true 计算属性的computedWatcher
+      // 重新设置dirty为true 方便下次访问计算属性求值
       this.dirty = true
     } else if (this.sync) {
-      // 同步Watcher使用
+      // userWatcher 同步计算 直接执行run
       this.run()
     } else {
-      // 渲染Watcher
-      // 一般的组件数据更新都走到这里
+      // 渲染Watcher 和 非sync的userWatcher
       queueWatcher(this)
     }
   }
@@ -274,7 +301,7 @@ export default class Watcher {
         this.deep
       ) {
         /**
-         * 1. 新值和旧值不相等 (用户自定义Watcher)
+         * 1. 新值和旧值不相等 如果计算值不变，不会触发重新渲染
          * 2. 或 新值是对象
          * 3. 或 deep为真
          */
@@ -282,7 +309,7 @@ export default class Watcher {
         const oldValue = this.value
         this.value = value
         if (this.user) {
-          // UserWatcher 用户自定义Watcher，执行回调并处理错误
+          // userWatcher 用户定义侦听属性的Watcher，执行回调并处理错误
           const info = `callback for watcher "${this.expression}"`
           invokeWithErrorHandling(this.cb, this.vm, [value, oldValue], this.vm, info)
         } else {
@@ -296,14 +323,24 @@ export default class Watcher {
   /**
    * Evaluate the value of the watcher.
    * This only gets called for lazy watchers.
+   * 计算Watcher的值 该方法仅被lazy watchers 即computedWatcher调用
    */
   evaluate () {
+    /**
+     * 计算属性getter在调用时，才进行computedWatcher的求值
+     *  computedWatcher在求值中，会触发computedWatcher关注的响应式key的Dep进行依赖收集，
+     *  那么key的Dep.subs会保存此computedWatcher，即computedWatcher订阅了此key的变化，
+     *  key发生变化时，会再触发computedWatcher进行evaluate()
+     */
     this.value = this.get()
-    this.dirty = false
+    this.dirty = false // 求值后dirty置为false，表示计算属性已经求值
   }
 
   /**
    * Depend on all deps collected by this watcher.
+   * 触发与此Watcher相关的dep依赖收集
+   *  1. computedWatcher会调用此方法，触发关注此计算属性的渲染Watcher或userWatcher去订阅此Dep
+   *     那么，此计算属性的数据依赖Dep.subs中会push此渲染Watcher或userWatcher
    */
   depend () {
     let i = this.deps.length
