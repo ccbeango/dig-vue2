@@ -54,6 +54,7 @@ export function validateProp (
     value = getPropDefaultValue(vm, prop, key)
     // since the default value is a fresh copy,
     // make sure to observe it.
+    // 获取props设置的默认值时，将它设置程响应式的
     const prevShouldObserve = shouldObserve
     toggleObserving(true)
     observe(value)

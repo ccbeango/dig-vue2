@@ -81,6 +81,12 @@ export function renderMixin (Vue: Class<Component>) {
     return nextTick(fn, this)
   }
 
+
+  // vm.$vnode（_parentVnode） 意思就是未经过 _render 函数处理的 vnode， vm._vnode 是经过 render处理过的，为什么文章中说的它们是一种父子关系呢？ vue 为什么要在2处进行引用 _parentVnode 呢？
+  // 举个例子，在父组件的 template 中有一个组件标签 <child></child>。
+  // child 的模板比如说是 <div class=child>xxxx</div>。
+  // 那么在父组件中，child 就是一个组件 vnode，它会在 patch 过程中执行 child 组件的初始化，同时把这个 vnode 作为参数传入，子组件初始化的时候这个 vnode 就是_parentVnode，那么子组件经过 _render 渲染生成的 vnode 是 vm._vnode，_vnode 你可以理解为组件的渲染 root vnode，而 $vnode 就是 _parentVnode，是这个组件在父组件中的占位组件 vnode，所以说是父子关系也不为过。
+
   // vm._render最终是通过执行createElement()方法并返回的是渲染vnode，它是一个虚拟Node
   // render执行，最终会替换掉原来的节点，这也是为什么根节点不能为html或body节点
   Vue.prototype._render = function (): VNode {
@@ -98,7 +104,7 @@ export function renderMixin (Vue: Class<Component>) {
 
     // set parent vnode. this allows render functions to have access
     // to the data on the placeholder node.
-    // $vnode 当前的VNode 即 当前的占位符vnode
+    // $vnode 当前的VNode 即 当前的组件占位符VNode
     vm.$vnode = _parentVnode
 
     // render self
@@ -160,8 +166,9 @@ export function renderMixin (Vue: Class<Component>) {
       vnode = createEmptyVNode()
     }
     // set parent
-    // 当前渲染VNode的parent 指向 当前的占位符VNode
+    // 当前组件渲染VNode的parent 指向 组件占位符VNode
     vnode.parent = _parentVnode
+    // render执行完返回的是渲染VNode
     return vnode
   }
 }

@@ -101,9 +101,9 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // 这样子组件再去创建孙子组件时，孙子组件就能获取到它的父vm实例
     const restoreActiveInstance = setActiveInstance(vm)
 
-    // vm._vnode 渲染vnode
-    vm._vnode = vnode // _vnode 是当前的渲染vnode
-    // 实例上 vm.$vnode 占位符vnode
+    // vm._vnode  _vnode 是当前的经过render方法执行的渲染vnode
+    vm._vnode = vnode
+    // 实例上 vm.$vnode 是组件在父组件中的占位符VNode
     // vm.$vnode 和 vm._vnode 是父子关系 （vm.$vnode是父） 
     // 代码表达就是 vm._vnode.parent === vm.$vnode  在render.js中赋值
 
@@ -287,11 +287,13 @@ export function mountComponent (
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
-  // 实例化渲染Watcher
-  // 观察者模式
-  // Watcher 在这里起到两个作用：
-  //    一个是初始化的时候会执行回调函数updateComponent
-  //    另一个是当 vm 实例中的监测的数据发生变化的时候执行回调函数updateComponent
+  /**
+   * 实例化渲染Watcher
+   *  观察者模式
+   * Watcher 在这里起到两个作用：
+   *  1. 初始化的时候会执行回调函数updateComponent
+   *  2. 当vm实例中的监测的数据发生变化的时候执行回调函数updateComponent
+   */
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
@@ -325,6 +327,17 @@ export function mountComponent (
   return vm
 }
 
+/**
+ * 更新父组件中子组件占位符对应的组件实例 
+ *  因为更新了父组件中子组件占位符VNode，那么VNode对应的组件实例vm的一系列属性也会发生变化，
+ *  如父组件App中引入子组件HelloWorld，App更新了，HelloWorld对应会更新，
+ *  包括占位符vm.$vnode的更新、slot的更新，listeners的更新，props的更新等等
+ * @param {*} vm              需要更新的子组件实例
+ * @param {*} propsData       更新后的props
+ * @param {*} listeners       更新后的listeners
+ * @param {*} parentVnode     需要更新的子组件占位符VNode节点
+ * @param {*} renderChildren  新的子组件的children
+ */
 export function updateChildComponent (
   vm: Component,
   propsData: ?Object,
@@ -359,11 +372,14 @@ export function updateChildComponent (
     vm.$options._renderChildren ||  // has old static slots
     hasDynamicScopedSlot
   )
-
+  
+  // 更新子组件实例vm的占位符VNode
   vm.$options._parentVnode = parentVnode
+  // 更新子组件实例的组件占位符VNode
   vm.$vnode = parentVnode // update vm's placeholder node without re-render
 
   if (vm._vnode) { // update child tree's parent
+    // 更新子组件实例vm的渲染VNode的父占位符VNode
     vm._vnode.parent = parentVnode
   }
   vm.$options._renderChildren = renderChildren
@@ -371,9 +387,11 @@ export function updateChildComponent (
   // update $attrs and $listeners hash
   // these are also reactive so they may trigger child update if the child
   // used them during render
+  // 更新vm.$attrs 和 vm.$listeners
   vm.$attrs = parentVnode.data.attrs || emptyObject
   vm.$listeners = listeners || emptyObject
 
+  // 更新子组件实例的props
   // update props
   if (propsData && vm.$options.props) {
     toggleObserving(false)
@@ -382,10 +400,14 @@ export function updateChildComponent (
     for (let i = 0; i < propKeys.length; i++) {
       const key = propKeys[i]
       const propOptions: any = vm.$options.props // wtf flow?
+      // props[key]在赋值过程中，会触发此数据的setter，
+      // 那么就会触订阅了此数据依赖数据Dep派发更新，组件的渲染Watcher会执行子组件的更新
       props[key] = validateProp(key, propOptions, propsData, vm)
     }
     toggleObserving(true)
     // keep a copy of raw propsData
+    // 对props中的数据做一次拷贝，并在拷贝中阻止依赖收集
+    // 因为只是更新子组件vm的props，不需要依赖收集
     vm.$options.propsData = propsData
   }
 

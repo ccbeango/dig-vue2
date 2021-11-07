@@ -51,7 +51,17 @@ const componentVNodeHooks = {
       const mountedNode: any = vnode // work around flow
       componentVNodeHooks.prepatch(mountedNode, mountedNode)
     } else {
-      // 组件处理 返回子组件实例
+      /**
+       * 创建组件占位符节点的组件实例
+       *  形成关系如下：
+       *    组件占位符VNode.componentInstance._vnode 可以找到组件的渲染VNode
+       *    组件的渲染VNode.parent可以找到组件占位符VNode
+       *    组件实例componentInstance即vm.$vnode可以找到组件占位符VNode
+       *    可表示为：
+       *      组件占位符VNode.componentInstance._vnode = 组件渲染VNode
+       *      组件占位符VNode.componentInstance.$vnode = 组件占位符VNode 即 vm.$vnode = 组件占位符VNode
+       *      组件渲染VNode.parent = 组件占位符VNode
+       */
       const child = vnode.componentInstance = createComponentInstanceForVnode(
         vnode,
         activeInstance
@@ -63,8 +73,12 @@ const componentVNodeHooks = {
   },
 
   prepatch (oldVnode: MountedComponentVNode, vnode: MountedComponentVNode) {
+    // 新的组件占位符VNode节点的options
     const options = vnode.componentOptions
+    // 获取旧组件占位符VNode的渲染vm实例componentInstance
+    // child就是在父组件(App)页面中的子组件(HelloWorld)占位符VNode的对应的实现实例
     const child = vnode.componentInstance = oldVnode.componentInstance
+    // 更新父组件中子组件占位符对应的组件实例
     updateChildComponent(
       child,
       options.propsData, // updated props
@@ -119,13 +133,13 @@ const componentVNodeHooks = {
 const hooksToMerge = Object.keys(componentVNodeHooks)
 
 /**
- * 创建组件VNode
- * @param {*} Ctor 要扩展的组件VNode
- * @param {*} data 组件的VNodeData
- * @param {*} context 创建组件的上下文
+ * 创建组件占位符VNode
+ * @param {*} Ctor 要创建组件VNode的组件、对象或函数异步组件
+ * @param {*} data 组件VNode的VNodeData
+ * @param {*} context 创建组件的上下文组件实例
  * @param {*} children Ctor的子节点
  * @param {*} tag 节点标签名
- * @returns 组件VNode
+ * @returns 组件占位符VNode
  */
 export function createComponent (
   Ctor: Class<Component> | Function | Object | void,
@@ -174,9 +188,9 @@ export function createComponent (
       // return a placeholder node for async component, which is rendered
       // as a comment node but preserves all the raw information for the node.
       // the information will be used for async server-rendering and hydration.
-      // 异步组件第一次执行，是同步执行的，会执行到这里，返回一个注释节点VNode，最终在DOM中渲染成一个注释节点
+      // 异步组件第一次执行，是同步执行的，会执行到这里，返回一个注释占位符VNode节点，最终在DOM中渲染成一个注释节点
       // 创建一个异步组件的注释VNode占位符 但把asyncFactory和asyncMeta赋值给当前VNode
-      // resolveAsyncComponent再调用resolve，会forceRender会第二次执行
+      // resolveAsyncComponent再调用resolve，会forceRender，就会第二次执行
       return createAsyncPlaceholder(
         asyncFactory,
         data,
@@ -198,7 +212,7 @@ export function createComponent (
   resolveConstructorOptions(Ctor)
 
   // transform component v-model data into props & events
-  // FIXME: 跳过 v-model 转成成 props 和 events
+  // FIXME: 跳过 v-model 转成 props 和 events
   if (isDef(data.model)) {
     transformModel(Ctor.options, data)
   }
@@ -242,11 +256,16 @@ export function createComponent (
 
   // return a placeholder vnode
   const name = Ctor.options.name || tag
-  // 创建组件VNode
-  // 注意： 与普通元素VNode节点不同的是，
-  //        组件VNode的children（参数3）为undefined 这在patch阶段遍历时会很有用
-  //        children放在了 componentOptions（参数7）中
-  //        该参数中也包含了其它有用数据 Ctor 实例化使用 children 在插槽的时候会用到
+
+  /**
+   * 组件占位符VNode
+   * 注意：
+   *    与普通元素VNode节点不同的是，组件VNode的children（参数3）为undefined，
+   *    因为组件VNode只是用作占位符，而不会生成真正的DOM节点，所以把组件占位符
+   *    的children放在componentOptions（参数7）中
+   *    这在patch阶段遍历时，patchVNode中会很有用
+   * 该参数中也包含了其它有用数据 Ctor 实例化使用 children 在插槽的时候会用到
+   */
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
     data, undefined, undefined, undefined, context,
@@ -267,7 +286,7 @@ export function createComponent (
 
 /**
  * 创建组件VNode节点的组件实例
- * @param {*} vnode  挂载的组件VNode
+ * @param {*} vnode  已挂载的组件占位符VNode
  * @param {*} parent 当前激活的vm实例 
  * @returns 
  */
@@ -292,7 +311,10 @@ export function createComponentInstanceForVnode (
     options.staticRenderFns = inlineTemplate.staticRenderFns
   }
 
-  // 执行组件VNode节点的组件构造函数 new Sub() 构造函数会执行 _init() 方法
+  /**
+   * 执行组件VNode节点的组件构造函数 new Sub() 构造函数会执行 _init() 方法
+   * 实例化组件占位符VNode成组件实例
+   */
   return new vnode.componentOptions.Ctor(options)
 }
 
