@@ -39,7 +39,7 @@ export function initLifecycle (vm: Component) {
   // locate first non-abstract parent
   // parent 是 activeInstance
   // 当前的vm实例要挂载到parent上
-  // parent就是当前VNode节点、当前vm实例的父级vm实例
+  // parent就是当前vm实例的父级vm实例
   let parent = options.parent
   if (parent && !options.abstract) {
     while (parent.$options.abstract && parent.$parent) {
@@ -394,12 +394,16 @@ export function updateChildComponent (
   // 更新子组件实例的props
   // update props
   if (propsData && vm.$options.props) {
+    // 对于对象的prop值，子组件的prop值始终指向父组件的prop值，只要父组件的prop值变化，
+    // 就会触发子组件的重新渲染，所以这个observe过程是可以省略的
     toggleObserving(false)
-    const props = vm._props
-    const propKeys = vm.$options._propKeys || []
+    const props = vm._props // 子组件的props值
+    const propKeys = vm.$options._propKeys || [] // 子组件中所有的prop的key
     for (let i = 0; i < propKeys.length; i++) {
       const key = propKeys[i]
       const propOptions: any = vm.$options.props // wtf flow?
+      // 遍历propKeys，然后执行props[key] = validateProp(key, propOptions, propsData, vm)
+      // 重新验证和计算新的prop数据，更新vm._props，也就是子组件的props，这个就是子组件props的更新过程
       // props[key]在赋值过程中，会触发此数据的setter，
       // 那么就会触订阅了此数据依赖数据Dep派发更新，组件的渲染Watcher会执行子组件的更新
       props[key] = validateProp(key, propOptions, propsData, vm)

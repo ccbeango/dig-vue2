@@ -381,6 +381,11 @@ export function validateComponentName (name: string) {
 /**
  * Ensure all props option syntax are normalized into the
  * Object-based format.
+ * 标准化props
+ *   将props转成标准要求的对象格式
+ * @param {*} options 对象或数组的props
+ * @param {*} vm 
+ * @returns 
  */
 function normalizeProps (options: Object, vm: ?Component) {
   const props = options.props
@@ -388,25 +393,34 @@ function normalizeProps (options: Object, vm: ?Component) {
   const res = {}
   let i, val, name
   if (Array.isArray(props)) {
+    // props是数组格式
+    // [A, B, C] =>
+    // { A: {type: null}, B: {type: null}, C: {type: null} }
     i = props.length
     while (i--) {
       val = props[i]
       if (typeof val === 'string') {
-        name = camelize(val)
+        name = camelize(val) // 转驼峰
         res[name] = { type: null }
       } else if (process.env.NODE_ENV !== 'production') {
+        // 数组语法的props，元素必须是字符串
         warn('props must be strings when using array syntax.')
       }
     }
   } else if (isPlainObject(props)) {
+    // props是对象
+    // { A: Number, B: [ Number, String ], C: { type: String, default: 'hello', ... } } => 
+    // { A: {type: Number}, B: {type: [ Number, String ]}, C: { type: String, default: 'hello', ... } }
     for (const key in props) {
       val = props[key]
       name = camelize(key)
       res[name] = isPlainObject(val)
         ? val
+        // 非对象val当作props指定类型字段 val可以是字符串或数组 String 或 [String, Number]
         : { type: val }
     }
   } else if (process.env.NODE_ENV !== 'production') {
+    // 非数组或对象的props警告提示
     warn(
       `Invalid value for option "props": expected an Array or an Object, ` +
       `but got ${toRawType(props)}.`,

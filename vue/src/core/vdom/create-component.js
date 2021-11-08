@@ -218,7 +218,7 @@ export function createComponent (
   }
 
   // extract props
-  // FIXME: 跳过 VNodeData中提取props
+  // FIXME: 跳过 从VNodeData中获取要创建的组件占位符VNode的props
   const propsData = extractPropsFromVNodeData(data, Ctor, tag)
 
   // functional component
@@ -287,7 +287,7 @@ export function createComponent (
 /**
  * 创建组件VNode节点的组件实例
  * @param {*} vnode  已挂载的组件占位符VNode
- * @param {*} parent 当前激活的vm实例 
+ * @param {*} parent 当前激活的vm实例 即 当前VNode节点的父vm实例
  * @returns 
  */
 export function createComponentInstanceForVnode (

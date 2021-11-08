@@ -184,6 +184,7 @@ export const capitalize = cached((str: string): string => {
 /**
  * Hyphenate a camelCase string.
  *  将驼峰字符串转成连字符字符串
+ *  helloWorld => hello-world
  */
 const hyphenateRE = /\B([A-Z])/g
 export const hyphenate = cached((str: string): string => {

@@ -102,10 +102,13 @@ function initProps (vm: Component, propsOptions: Object) {
   // instead of dynamic object key enumeration.
   // 定义vm.$options._propKeys，用来缓存props中的key
   const keys = vm.$options._propKeys = []
-  const isRoot = !vm.$parent
+  const isRoot = !vm.$parent // vm.$parent不为真时，vm则是根实例
 
   // root instance props should be converted
-  if (!isRoot) {
+  if (!isRoot) { // vm不是根实例
+    // vm不是根实例，对于对象的prop值，子组件的prop值始终指向父组件的prop值，只要父组件的prop值变化，
+    // 就会触发子组件的重新渲染，所以这个observe过程是可以省略的
+    // vm是根实例，那么这个props需要递归设置程响应式的，也就不命中这里
     toggleObserving(false)
   }
 
@@ -115,7 +118,7 @@ function initProps (vm: Component, propsOptions: Object) {
   for (const key in propsOptions) {
     // 用户传入props的key，存入vm.$options._propKeys
     keys.push(key)
-    // 验证props中的key并获取到key的值value
+    // 校验传递的props数据是否满足prop的定义规范 并返回满足规范的prop的值value
     const value = validateProp(key, propsOptions, propsData, vm)
 
     /* istanbul ignore else */
@@ -131,10 +134,12 @@ function initProps (vm: Component, propsOptions: Object) {
         )
       }
 
-      // 把每个prop对应的值变成响应式
+      // 把每个prop对应的值变成响应式 
+      // 非根实例的props时会浅设置响应式的，不递归将每个属性设置成响应式的
       defineReactive(props, key, value, () => {
         if (!isRoot && !isUpdatingChildComponent) {
-          // 开发常见错误警告 子组件修改props的警告
+          // 非根实例 且 非子组件更新 说明是子组件直接更新的props
+          // 直接更新props报错 开发常见错误警告 子组件修改props的警告
           warn(
             `Avoid mutating a prop directly since the value will be ` +
             `overwritten whenever the parent component re-renders. ` +
@@ -152,6 +157,8 @@ function initProps (vm: Component, propsOptions: Object) {
     // static props are already proxied on the component's prototype
     // during Vue.extend(). We only need to proxy props defined at
     // instantiation here.
+    // 对于非根实例的子组件而言，prop的代理发生在Vue.extend阶段
+    // 这么做的好处是不用为每个组件实例都做一层proxy，是一种优化手段
     if (!(key in vm)) {
       // 没有在extend实例化时添加成静态属性的props[key]，设置vm._props[key]的proxy
       // 代理props

@@ -26,6 +26,7 @@ export let shouldObserve: boolean = true // 是否需要observe标识
 
 /**
  * 切换是否需要observe
+ * 控制在observe()的过程中是否需要把当前值变成一个Observer对象
  * @param {*} value 
  */
 export function toggleObserving (value: boolean) {
@@ -209,7 +210,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
  * @param {*} obj           要定义的对象
  * @param {*} key           对象的key
  * @param {*} val 
- * @param {*} customSetter 
+ * @param {*} customSetter  自定义setter
  * @param {*} shallow 
  * @returns 
  */
@@ -240,7 +241,15 @@ export function defineReactive (
     val = obj[key]
   }
 
-  // childObserver  递归调用observe()
+  /**
+   * childObserver 递归调用observe()
+   * 对于值val会执行observe函数，然后遇到val是对象或者数组的情况会递归执行
+   * defineReactive把它们的子属性都变成响应式的
+   * 但是shouldObserve的值是false时，这个递归过程就会被省略
+   * 
+   * 对于对象的prop值，子组件的prop值始终指向父组件的prop值，只要父组件的prop值变化，
+   * 就会触发子组件的重新渲染，所以这个observe过程是可以省略的
+   */
   let childOb = !shallow && observe(val)
 
   // 定义key为访问器属性
