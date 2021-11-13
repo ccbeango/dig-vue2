@@ -5,17 +5,29 @@ import { parseFilters } from './parser/filter-parser'
 
 type Range = { start?: number, end?: number };
 
+/**
+ * Vue编译错误警告
+ * @param {*} msg 
+ * @param {*} range 
+ */
 /* eslint-disable no-unused-vars */
 export function baseWarn (msg: string, range?: Range) {
   console.error(`[Vue compiler]: ${msg}`)
 }
 /* eslint-enable no-unused-vars */
 
+/**
+ * 获取modules数组中的指定方法，并返回获取到的方法数组
+ * @param {*} modules 
+ * @param {*} key 指定的方法名
+ * @returns 
+ */
 export function pluckModuleFunction<F: Function> (
   modules: ?Array<Object>,
   key: string
 ): Array<F> {
   return modules
+    // filter(_ => _) 会过滤掉非真值
     ? modules.map(m => m[key]).filter(_ => _)
     : []
 }
@@ -25,11 +37,24 @@ export function addProp (el: ASTElement, name: string, value: string, range?: Ra
   el.plain = false
 }
 
+/**
+ * AST元素上添加静态属性或动态属性
+ *  静态属性添加到AST元素的dynamicAttrs数组中
+ *  动态属性添加到AST元素的attrs数组中
+ * 
+ *  格式：{ name, value, dynamic, start, end }
+ * @param {*} el 
+ * @param {*} name 
+ * @param {*} value 
+ * @param {*} range 
+ * @param {*} dynamic 
+ */
 export function addAttr (el: ASTElement, name: string, value: any, range?: Range, dynamic?: boolean) {
   const attrs = dynamic
     ? (el.dynamicAttrs || (el.dynamicAttrs = []))
     : (el.attrs || (el.attrs = []))
   attrs.push(rangeSetItem({ name, value, dynamic }, range))
+  // el置为非普通AST元素
   el.plain = false
 }
 
@@ -158,19 +183,30 @@ export function getRawBindingAttr (
     el.rawAttrsMap[name]
 }
 
+/**
+ * 获取动态绑定属性的值的表达式 或 值的字符串 
+ * @param {*} el 
+ * @param {*} name 
+ * @param {*} getStatic 是否获取静态 true 直接返回绑定值字符串
+ * @returns 
+ */
 export function getBindingAttr (
   el: ASTElement,
   name: string,
   getStatic?: boolean
 ): ?string {
+  // 绑定属性值 : 或 v-bind 语法 
   const dynamicValue =
     getAndRemoveAttr(el, ':' + name) ||
     getAndRemoveAttr(el, 'v-bind:' + name)
   if (dynamicValue != null) {
+    // 解析绑定值得到表达式并返回
     return parseFilters(dynamicValue)
   } else if (getStatic !== false) {
+    // 静态
     const staticValue = getAndRemoveAttr(el, name)
     if (staticValue != null) {
+      // 直接返回绑定值的字符串格式
       return JSON.stringify(staticValue)
     }
   }
@@ -180,6 +216,13 @@ export function getBindingAttr (
 // doesn't get processed by processAttrs.
 // By default it does NOT remove it from the map (attrsMap) because the map is
 // needed during codegen.
+/**
+ * 从attrsList中移除掉指定属性
+ * @param {*} el   AST元素
+ * @param {*} name 要移除属性
+ * @param {*} removeFromMap 是否从attrsMap中也移除指定属性
+ * @returns 被移除的属性的value值
+ */
 export function getAndRemoveAttr (
   el: ASTElement,
   name: string,
@@ -215,6 +258,12 @@ export function getAndRemoveAttrByRegex (
   }
 }
 
+/**
+ * 设置解析html值的开始和结束索引
+ * @param {*} item 
+ * @param {*} range 
+ * @returns 
+ */
 function rangeSetItem (
   item: any,
   range?: { start?: number, end?: number }

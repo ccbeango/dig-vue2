@@ -25,11 +25,13 @@ Vue.prototype.$mount = function (
   // 获取DOM节点
   el = el && query(el)
 
-  // Vue 不能挂载在 body、html 这样的根节点上
-  // 如果节点是body或document节点类型，直接返回节点
-  // 因为render执行时，最终会替换掉原来的节点，所以不能替换掉body或者html节点
   /* istanbul ignore if */
   if (el === document.body || el === document.documentElement) {
+    /**
+     * 节点是body或document节点类型，直接返回节点
+     * Vue 不能挂载在body、html这样的根节点上，因为render执行时，最终会替换掉原来的
+     * 节点，所以不能替换掉body或者html节点
+     */
     process.env.NODE_ENV !== 'production' && warn(
       `Do not mount Vue to <html> or <body> - mount to normal elements instead.`
     )
@@ -38,15 +40,23 @@ Vue.prototype.$mount = function (
 
   const options = this.$options
   // resolve template/el and convert to render function
-  // Vue最终执行的都是render方法
-  // 如果没有定义 render 方法，则会把el或者template字符串转换成 render 方法
+  /**
+   * Vue最终执行的都是render方法
+   *  如果没有定义render方法，则会把el或者template字符串转换成render方法
+   *  没有render方法时，转换规则如下：
+   *    1. 定义了template，template有两种类型：
+   *        (1) id字符串 获取此id的后代HTMl字符串作为模板
+   *        (2) 原生DOM元素 获取此DOM的后代HTMl字符串作为模板
+   *    2. 没有定义template，定义了el，获取el本身HTML字符串作为template
+   */
   if (!options.render) {
     let template = options.template
     if (template) {
-      // 如果定义了template
+      // 定义了template
       if (typeof template === 'string') {
         // template是一个id，获取id的节点DOM
         if (template.charAt(0) === '#') {
+          // 获取此id的后代HTML作为字符串作为模板
           template = idToTemplate(template)
           /* istanbul ignore if */
           if (process.env.NODE_ENV !== 'production' && !template) {
@@ -57,7 +67,7 @@ Vue.prototype.$mount = function (
           }
         }
       } else if (template.nodeType) {
-        // template是一个原生DOM节点 直接获取节点HTML字符串
+        // template是一个原生DOM节点 获取此DOM的后代HTMl字符串作为模板
         template = template.innerHTML
       } else {
         if (process.env.NODE_ENV !== 'production') {
@@ -67,7 +77,7 @@ Vue.prototype.$mount = function (
         return this
       }
     } else if (el) {
-      // 如果定义了el，创建el的DOM节点字符串
+      // 定义了el，获取el本身的HTML字符串
       template = getOuterHTML(el)
     }
 
@@ -78,7 +88,7 @@ Vue.prototype.$mount = function (
         mark('compile')
       }
 
-      // 生成render staticRenderFns 并赋值给options
+      // compileToFunctions：把模板template编译生成render以及staticRenderFns
       const { render, staticRenderFns } = compileToFunctions(template, {
         outputSourceRange: process.env.NODE_ENV !== 'production',
         shouldDecodeNewlines,
@@ -86,6 +96,7 @@ Vue.prototype.$mount = function (
         delimiters: options.delimiters,
         comments: options.comments
       }, this)
+      // 赋值给options
       options.render = render
       options.staticRenderFns = staticRenderFns
 
@@ -104,6 +115,7 @@ Vue.prototype.$mount = function (
 /**
  * Get outerHTML of elements, taking care
  * of SVG elements in IE as well.
+ * 获取el的HTML字符串
  */
 function getOuterHTML (el: Element): string {
   if (el.outerHTML) {

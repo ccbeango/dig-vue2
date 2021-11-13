@@ -1,9 +1,3 @@
-import Vue from 'vue'
-import App from './App.vue'
-
-Vue.config.productionTip = false
-
-new Vue({
-  el: '#app',
-  render: h => h(App),
-}).$mount('#app')
+// 编译
+// import './examples/10_编译/01_编译流程/main'
+import './examples/10_编译/02_parse2ast/main'

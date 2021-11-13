@@ -1,0 +1,27 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "chrome-port-set",
+      "type": "process",
+      "command": "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+      "windows": {
+        "command": "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
+      },
+      "isBackground": false,
+      "args": [ "--remote-debugging-port=9222" ],
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": ""
+        },
+        "background": {
+          "beginsPattern": "Starting development chrome\\.\\.\\.",
+          "endsPattern": "Not launching vue app as debug argument was passed\\."
+        }
+      }
+    }
+  ]
+}

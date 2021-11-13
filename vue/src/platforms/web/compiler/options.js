@@ -12,6 +12,9 @@ import directives from './directives/index'
 import { genStaticKeys } from 'shared/util'
 import { isUnaryTag, canBeLeftOpenTag } from './util'
 
+/**
+ * Web平台编译默认配置 parse生成AST时使用
+ */
 export const baseOptions: CompilerOptions = {
   expectHTML: true,
   modules,

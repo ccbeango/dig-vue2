@@ -2,6 +2,10 @@
 
 import { cached, extend, toObject } from 'shared/util'
 
+/**
+ * 解析静态的style字符串
+ *   backgournd: red; color: green; => { red: red, color: green }
+ */
 export const parseStyleText = cached(function (cssText) {
   const res = {}
   const listDelimiter = /;(?![^(]*\))/g

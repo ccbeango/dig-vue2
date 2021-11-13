@@ -2,6 +2,11 @@
 
 const validDivisionCharRE = /[\w).+\-_$\]]/
 
+/**
+ * 解析动态属性的绑定值
+ * @param {*} exp 
+ * @returns 解析后的表达式
+ */
 export function parseFilters (exp: string): string {
   let inSingle = false
   let inDouble = false
