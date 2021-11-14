@@ -33,10 +33,18 @@ export const isSVG = makeMap(
   true
 )
 
-// pre标签
+/**
+ * 是否是pre标签
+ * @param {*} tag 
+ * @returns 
+ */
 export const isPreTag = (tag: ?string): boolean => tag === 'pre'
 
-// Web端的元素标签
+/**
+ * 是否是Web端的元素标签
+ * @param {*} tag 
+ * @returns 
+ */
 export const isReservedTag = (tag: string): ?boolean => {
   return isHTMLTag(tag) || isSVG(tag)
 }

@@ -44,7 +44,6 @@ export const createCompiler = createCompilerCreator(function baseCompile (
 ): CompiledResult {
   // 解析模板字符串生成AST
   const ast = parse(template.trim(), options)
-
   // 优化AST
   if (options.optimize !== false) {
     optimize(ast, options)

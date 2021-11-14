@@ -1044,7 +1044,7 @@ function processAttrs (el) {
     name = rawName = list[i].name
     value = list[i].value
     if (dirRE.test(name)) { // 动态绑定属性处理
-      // mark element as dynamic
+      // mark element as dynamic 标记动态AST节点标识
       el.hasBindings = true
       // modifiers 解析修饰符
       modifiers = parseModifiers(name.replace(dirRE, ''))
