@@ -48,7 +48,7 @@ export const createCompiler = createCompilerCreator(function baseCompile (
   if (options.optimize !== false) {
     optimize(ast, options)
   }
-  // 生成渲染代码
+  // 生成渲染代码的字符串
   const code = generate(ast, options)
 
   return {

@@ -77,7 +77,11 @@ export default class VNode {
   }
 }
 
-// 创建一个空注释占位VNode节点
+/**
+ * 创建一个注释占位VNode节点
+ * @param {*} text 
+ * @returns 
+ */
 export const createEmptyVNode = (text: string = '') => {
   const node = new VNode()
   node.text = text
@@ -85,7 +89,11 @@ export const createEmptyVNode = (text: string = '') => {
   return node
 }
 
-// 创建一个文本节点
+/**
+ * 创建一个文本节点VNode
+ * @param {*} val 
+ * @returns 
+ */
 export function createTextVNode (val: string | number) {
   return new VNode(undefined, undefined, undefined, String(val))
 }

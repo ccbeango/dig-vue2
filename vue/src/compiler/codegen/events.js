@@ -52,6 +52,12 @@ const modifierCode: { [key: string]: string } = {
   right: genGuard(`'button' in $event && $event.button !== 2`)
 }
 
+/**
+ * 生成事件的处理code
+ * @param {*} events 
+ * @param {*} isNative 
+ * @returns 
+ */
 export function genHandlers (
   events: ASTElementHandlers,
   isNative: boolean

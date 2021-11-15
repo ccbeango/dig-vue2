@@ -12,6 +12,11 @@ import { bindObjectListeners } from './bind-object-listeners'
 import { resolveScopedSlots } from './resolve-scoped-slots'
 import { bindDynamicKeys, prependModifier } from './bind-dynamic-keys'
 
+/**
+ * 编译阶段生成render中用到的辅助函数
+ *  会添加到Vue.prototype上
+ * @param {*} target 
+ */
 export function installRenderHelpers (target: any) {
   target._o = markOnce
   target._n = toNumber

@@ -21,6 +21,10 @@ import {
   getAndRemoveAttrByRegex
 } from '../helpers'
 
+/**
+ * 匹配 @ v-on 开头
+ *  用来匹配v-one指令
+ */
 export const onRE = /^@|^v-on:/
 
 /**
@@ -803,6 +807,7 @@ function processIfConditions (el, parent) {
   const prev = findPrevElement(parent.children)
   if (prev && prev.if) {
     // 相邻的上个节点是v-if，扩展v-else-if或v-else到相邻的AST元素的ifConditions数组中
+    // v-else 时，el.elseif是undefined，即exp是undefined
     addIfCondition(prev, {
       exp: el.elseif,
       block: el

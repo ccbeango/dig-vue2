@@ -117,7 +117,7 @@ export function createCompileToFunctionFn (compile: Function): Function {
     // turn code into functions
     const res = {}
     const fnGenErrors = []
-    // 将编译后的字符串代码转换成一个真正的函数
+    // 将编译后的代码字符串转换成一个真正的函数 其实是一个with()语句包裹的代码段
     res.render = createFunction(compiled.render, fnGenErrors)
     res.staticRenderFns = compiled.staticRenderFns.map(code => {
       return createFunction(code, fnGenErrors)

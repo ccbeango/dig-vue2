@@ -73,7 +73,7 @@ export function setCurrentRenderingInstance (vm: Component) {
  */
 export function renderMixin (Vue: Class<Component>) {
   // install runtime convenience helpers
-  // 原型上添加render相关的内部方法
+  // 原型上添加生成render函数所需要的方法
   installRenderHelpers(Vue.prototype)
 
   // $nextTick

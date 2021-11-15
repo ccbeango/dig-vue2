@@ -37,6 +37,10 @@ export function isPrimitive (value: any): boolean %checks {
  * Quick object check - this is primarily used to tell
  * Objects from primitive values when we know the value
  * is a JSON-compliant type.
+ * 
+ * 是否是对象
+ *  - 数组 []
+ *  - 对象 {}
  */
 export function isObject (obj: mixed): boolean %checks {
   return obj !== null && typeof obj === 'object'
@@ -81,6 +85,11 @@ export function isPromise (val: any): boolean {
 
 /**
  * Convert a value to a string that is actually rendered.
+ * 将一个值转成字符串
+ *  - null => ''
+ *  - [] => JSON.stringify
+ *  - {} => JSON.stringify
+ *  - 其他值 String(val)
  */
 export function toString (val: any): string {
   return val == null
@@ -93,6 +102,7 @@ export function toString (val: any): string {
 /**
  * Convert an input value to a number for persistence.
  * If the conversion fails, return original string.
+ * 将一个string值转成number，转换失败则返回原始值
  */
 export function toNumber (val: string): number | string {
   const n = parseFloat(val)
@@ -103,6 +113,7 @@ export function toNumber (val: string): number | string {
  * Make a map and return a function for checking if a key
  * is in that map.
  * 形成一个自定义的Map映射，如：
+ * 'stop,ctrl,prevent' =>
  * {
  *  stop: true,
  *  ctrl: true,
@@ -301,28 +312,37 @@ export function genStaticKeys (modules: Array<ModuleOptions>): string {
 /**
  * Check if two values are loosely equal - that is,
  * if they are plain objects, do they have the same shape?
+ * 浅比较两个值是否相等
  */
 export function looseEqual (a: any, b: any): boolean {
   if (a === b) return true
   const isObjectA = isObject(a)
   const isObjectB = isObject(b)
   if (isObjectA && isObjectB) {
+    // a b 都是对象
     try {
       const isArrayA = Array.isArray(a)
       const isArrayB = Array.isArray(b)
       if (isArrayA && isArrayB) {
+        // a b 都是数组
         return a.length === b.length && a.every((e, i) => {
+          // 递归比较数组中每个元素是否相同
           return looseEqual(e, b[i])
         })
       } else if (a instanceof Date && b instanceof Date) {
+        // a b 都是 Date类型
+        // 时间戳是否相同
         return a.getTime() === b.getTime()
       } else if (!isArrayA && !isArrayB) {
+        // a b 都不是数组 即 都是{}格式的对象
         const keysA = Object.keys(a)
         const keysB = Object.keys(b)
         return keysA.length === keysB.length && keysA.every(key => {
+          // 递归比较对象中每个key的值是否相同
           return looseEqual(a[key], b[key])
         })
       } else {
+        // a b 不同时是 数组 对象 Date
         /* istanbul ignore next */
         return false
       }
@@ -331,8 +351,10 @@ export function looseEqual (a: any, b: any): boolean {
       return false
     }
   } else if (!isObjectA && !isObjectB) {
+    // a b 都不是对象，转字符串判断是否相等
     return String(a) === String(b)
   } else {
+    // a b 有一个是对象
     return false
   }
 }
@@ -341,6 +363,8 @@ export function looseEqual (a: any, b: any): boolean {
  * Return the first index at which a loosely equal value can be
  * found in the array (if value is a plain object, the array must
  * contain an object of the same shape), or -1 if it is not present.
+ * 返回数组arr中元素浅比较与val相等的元素索引
+ * 未找到则返回 -1
  */
 export function looseIndexOf (arr: Array<mixed>, val: mixed): number {
   for (let i = 0; i < arr.length; i++) {
