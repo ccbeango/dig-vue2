@@ -1,5 +1,8 @@
 /* @flow */
 
+/**
+ * 一个不可修改的空对象
+ */
 export const emptyObject = Object.freeze({})
 
 // These helpers produce better VM code in JS engines due to their

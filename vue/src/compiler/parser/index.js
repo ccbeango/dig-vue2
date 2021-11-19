@@ -67,7 +67,10 @@ const argRE = /:(.*)$/
  */ 
 export const bindRE = /^:|^\.|^v-bind:/
 const propBindRE = /^\./
-// 匹配属性修饰符
+/**
+ * 匹配属性修饰符 
+ *  匹配 .xxx.yyy
+ */
 const modifierRE = /\.[^.\]]+(?=[^\]]*$)/g
 
 const slotRE = /^v-slot(:|$)|^#/
@@ -1048,7 +1051,7 @@ function processAttrs (el) {
   for (i = 0, l = list.length; i < l; i++) {
     name = rawName = list[i].name
     value = list[i].value
-    if (dirRE.test(name)) { // 动态绑定属性处理
+    if (dirRE.test(name)) { // 动态绑定属性处理  v- @ : . # 开头
       // mark element as dynamic 标记动态AST节点标识
       el.hasBindings = true
       // modifiers 解析修饰符
@@ -1059,10 +1062,10 @@ function processAttrs (el) {
         (modifiers || (modifiers = {})).prop = true
         name = `.` + name.slice(1).replace(modifierRE, '')
       } else if (modifiers) {
-        // 去掉属性修饰符
+        // 去掉属性修饰符 @click.native.prevent => @click
         name = name.replace(modifierRE, '')
       }
-      // FIXME: 动态属性绑定处理
+
       if (bindRE.test(name)) { // v-bind 处理
         name = name.replace(bindRE, '')
         value = parseFilters(value)
@@ -1075,7 +1078,7 @@ function processAttrs (el) {
           process.env.NODE_ENV !== 'production' &&
           value.trim().length === 0
         ) {
-          // 警告 绑定值不能为空
+          // 警告 绑定值不能为空  如 不允许:hello=""
           warn(
             `The value for a v-bind expression cannot be empty. Found in "v-bind:${name}"`
           )
@@ -1137,12 +1140,15 @@ function processAttrs (el) {
           addAttr(el, name, value, list[i], isDynamic)
         }
       } else if (onRE.test(name)) { // v-on 事件处理
+        // 去掉开头v-on @ 符号 @click => click
         name = name.replace(onRE, '')
+        // 动态事件属性
         isDynamic = dynamicArgRE.test(name)
         if (isDynamic) {
+          // 去掉动态事件属性的中括号
           name = name.slice(1, -1)
         }
-        // 处理事件
+        // 处理事件 在el上扩展events或nativeEvents属性
         addHandler(el, name, value, modifiers, false, warn, list[i], isDynamic)
       } else { // normal directives 其它指令处理 如用户自定义的指令
         name = name.replace(dirRE, '')

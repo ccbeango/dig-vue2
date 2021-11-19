@@ -433,7 +433,14 @@ export function createPatchFunction (backend) {
     return isDef(vnode.tag)
   }
 
-  // 执行create钩子函数 包括系统的和用户自定义的
+  /**
+   * 执行create钩子函数 包括系统的和用户自定义的
+   * 调用时机：节点创建阶段调用的钩子
+   *  1. 创建一个真实的DOM节点时 createElm() 
+   *  2. 创建组件 initComponent()
+   * @param {*} vnode 
+   * @param {*} insertedVnodeQueue 
+   */
   function invokeCreateHooks (vnode, insertedVnodeQueue) {
     // 执行 cbs.create 队列
     for (let i = 0; i < cbs.create.length; ++i) {
@@ -441,7 +448,7 @@ export function createPatchFunction (backend) {
     }
     i = vnode.data.hook // Reuse variable
     if (isDef(i)) {
-      // 执行节点自定义create方法
+      // 执行节点自定义create方法 此时没有旧节点，传空VNode节点作为旧节点
       if (isDef(i.create)) i.create(emptyNode, vnode)
       // 将插入的节点VNode，加入insertedVnodeQueue
       // 目的是patch过程中插入vnode节点完毕之后，执行insert钩子

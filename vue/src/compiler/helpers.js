@@ -85,12 +85,41 @@ export function addDirective (
   el.plain = false
 }
 
+/**
+ * 预处理修饰符 将修饰符换成对应前缀符号
+ * 修饰符对应的前缀：
+ *    .passive  =>  &
+ *    .capture  =>  !
+ *    .once     =>  ~
+ * @param {*} symbol 要生成的前缀符号
+ * @param {*} name  
+ * @param {*} dynamic 是否是动态属性[key] 
+ * @returns 
+ */
 function prependModifierMarker (symbol: string, name: string, dynamic?: boolean): string {
   return dynamic
+    // 包裹动态key处理的修饰符 
     ? `_p(${name},"${symbol}")`
     : symbol + name // mark the event as captured
 }
 
+/**
+ * 对AST元素扩展events或nativeEvents属性
+ *  1. 根据modifier修饰符对事件名name做处理
+ *  2. 根据modifier.native判断是一个纯原生事件还是普通事件，
+ *     分别对应el.nativeEvents和el.events
+ *  3. 按照name对事件做归类，并把回调函数的字符串保留到对应的事件中，
+ *     - 同类单个事件保存成对象{ name: event1 }
+ *     - 同类多个事件保存成数组{ name: [event1, event2] }
+ * @param {*} el AST元素
+ * @param {*} name 属性名
+ * @param {*} value 属性值
+ * @param {*} modifiers 修饰符对象Map
+ * @param {*} important 事件权重 true放在同类型事件队列第一个 false放在最后一个
+ * @param {*} warn 
+ * @param {*} range 属性的索引
+ * @param {*} dynamic 是否是动态名属性 @[test] test是一个变量
+ */
 export function addHandler (
   el: ASTElement,
   name: string,
@@ -108,6 +137,7 @@ export function addHandler (
     process.env.NODE_ENV !== 'production' && warn &&
     modifiers.prevent && modifiers.passive
   ) {
+    // prevent和passive修饰符不能同时使用
     warn(
       'passive and prevent can\'t be used together. ' +
       'Passive handler can\'t prevent default event.',
@@ -119,6 +149,7 @@ export function addHandler (
   // this is technically browser-specific, but at least for now browsers are
   // the only target envs that have right/middle clicks.
   if (modifiers.right) {
+    // 鼠标右键 替换成 contextmenu
     if (dynamic) {
       name = `(${name})==='click'?'contextmenu':(${name})`
     } else if (name === 'click') {
@@ -126,6 +157,7 @@ export function addHandler (
       delete modifiers.right
     }
   } else if (modifiers.middle) {
+    // 鼠标滚轮键 替换成 mouseup
     if (dynamic) {
       name = `(${name})==='click'?'mouseup':(${name})`
     } else if (name === 'click') {
@@ -135,39 +167,52 @@ export function addHandler (
 
   // check capture modifier
   if (modifiers.capture) {
+    // DOM capture事件
     delete modifiers.capture
+    // name = !name
     name = prependModifierMarker('!', name, dynamic)
   }
   if (modifiers.once) {
+    // DOM once事件
     delete modifiers.once
+    // name = ~name
     name = prependModifierMarker('~', name, dynamic)
   }
   /* istanbul ignore if */
   if (modifiers.passive) {
+    // DOM passive事件
     delete modifiers.passive
+    // name = &name
     name = prependModifierMarker('&', name, dynamic)
   }
 
   let events
   if (modifiers.native) {
+    // 有native修饰符，将事件添加到el.nativeEvents
     delete modifiers.native
     events = el.nativeEvents || (el.nativeEvents = {})
   } else {
+    // 默认将事件添加到el.events
     events = el.events || (el.events = {})
   }
 
+  // newHandler = { value, dynamic, start, end, modifiers }
   const newHandler: any = rangeSetItem({ value: value.trim(), dynamic }, range)
   if (modifiers !== emptyObject) {
+    // 保存还没处理的修饰符
     newHandler.modifiers = modifiers
   }
 
   const handlers = events[name]
   /* istanbul ignore if */
   if (Array.isArray(handlers)) {
+    // 多个同类型事件，保存成数组 important将新事件放在第一个 否则放最后一个
     important ? handlers.unshift(newHandler) : handlers.push(newHandler)
   } else if (handlers) {
+    // 同类新的有两个事件 保存成数组
     events[name] = important ? [newHandler, handlers] : [handlers, newHandler]
   } else {
+    // 同类型的事件只有一个，保存成对象
     events[name] = newHandler
   }
 

@@ -227,12 +227,21 @@ export function createComponent (
     return createFunctionalComponent(Ctor, propsData, data, context, children)
   }
 
-  // FIXME: 跳过 自定义事件处理
+  // 自定义事件处理 将自定义事件的data.on赋值给listeners，
+  // 因为这些会被当作子组件事件，而不是原生DOM事件
   // extract listeners, since these needs to be treated as
   // child component listeners instead of DOM listeners
-  const listeners = data.on
+  const listeners = data.on // 子组件事件
   // replace with listeners with .native modifier
   // so it gets processed during parent component patch.
+  /**
+   * 组件上的nativeOn赋值给on，当前组件即父组件的patch过程中就会被当作原生事件来处理，
+   * 对于自定义事件，则把listeners作为vnode的componentOptions传入，它是在子组件初始
+   * 化阶段中处理的，所以它的处理环境是子组件，是被当作子组件事件，而不是原生DOM事件
+   * 
+   * 这就是为什么组件上使用native修饰符可以使用原生DOM事件，即组件上事件使用native修饰符
+   * 对应的是DOM事件的原因，当然这也是为什么只有组件有自定义事件和原生DOM事件
+   */
   data.on = data.nativeOn
 
   // FIXME: 跳过 抽象组件处理
@@ -265,6 +274,7 @@ export function createComponent (
    *    的children放在componentOptions（参数7）中
    *    这在patch阶段遍历时，patchVNode中会很有用
    * 该参数中也包含了其它有用数据 Ctor 实例化使用 children 在插槽的时候会用到
+   * listeners 组件的自定义事件
    */
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
@@ -304,7 +314,7 @@ export function createComponentInstanceForVnode (
   }
 
   // check inline-template render functions
-  // FIXME: 跳过
+  // FIXME: 跳过 内联模板处理
   const inlineTemplate = vnode.data.inlineTemplate
   if (isDef(inlineTemplate)) {
     options.render = inlineTemplate.render

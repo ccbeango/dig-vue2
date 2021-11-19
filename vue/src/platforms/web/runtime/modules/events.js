@@ -7,10 +7,16 @@ import { RANGE_TOKEN, CHECKBOX_RADIO_TOKEN } from 'web/compiler/directives/model
 import { currentFlushTimestamp } from 'core/observer/scheduler'
 import { emptyNode } from 'core/vdom/patch'
 
+// Web运行时事件处理
+
 // normalize v-model event tokens that can only be determined at runtime.
 // it's important to place the event as the first in the array because
 // the whole point is ensuring the v-model callback gets called before
 // user-attached handlers.
+/**
+ * 标准化v-model
+ * @param {*} on 
+ */
 function normalizeEvents (on) {
   /* istanbul ignore if */
   if (isDef(on[RANGE_TOKEN])) {
@@ -19,8 +25,10 @@ function normalizeEvents (on) {
     on[event] = [].concat(on[RANGE_TOKEN], on[event] || [])
     delete on[RANGE_TOKEN]
   }
+
   // This was originally intended to fix #4521 but no longer necessary
   // after 2.5. Keeping it for backwards compat with generated code from < 2.4
+  // < 2.4兼容代码
   /* istanbul ignore if */
   if (isDef(on[CHECKBOX_RADIO_TOKEN])) {
     on.change = [].concat(on[CHECKBOX_RADIO_TOKEN], on.change || [])
@@ -30,11 +38,22 @@ function normalizeEvents (on) {
 
 let target: any
 
+/**
+ * 创建一次性执行的事件定义函数
+ * @param {*} event 
+ * @param {*} handler 
+ * @param {*} capture 
+ * @returns 一次性执行的事件定义函数
+ */
 function createOnceHandler (event, handler, capture) {
   const _target = target // save current target element in closure
+  /**
+   * 一次性执行的事件定义函数
+   */
   return function onceHandler () {
     const res = handler.apply(null, arguments)
     if (res !== null) {
+      // 执行后，直接移除事件监听
       remove(event, onceHandler, capture, _target)
     }
   }
@@ -45,6 +64,13 @@ function createOnceHandler (event, handler, capture) {
 // safe to exclude.
 const useMicrotaskFix = isUsingMicroTask && !(isFF && Number(isFF[1]) <= 53)
 
+/**
+ * 添加DOM事件监听
+ * @param {*} name 
+ * @param {*} handler 
+ * @param {*} capture 
+ * @param {*} passive 
+ */
 function add (
   name: string,
   handler: Function,
@@ -58,6 +84,7 @@ function add (
   // and the handler would only fire if the event passed to it was fired
   // AFTER it was attached.
   if (useMicrotaskFix) {
+    // 微任务并且是<=53的火狐 解决bug
     const attachedTimestamp = currentFlushTimestamp
     const original = handler
     handler = original._wrapper = function (e) {
@@ -81,6 +108,7 @@ function add (
       }
     }
   }
+  // 添加DOM事件
   target.addEventListener(
     name,
     handler,
@@ -90,12 +118,20 @@ function add (
   )
 }
 
+/**
+ * 移除DOM事件监听
+ * @param {*} name 
+ * @param {*} handler 
+ * @param {*} capture 
+ * @param {*} _target 
+ */
 function remove (
   name: string,
   handler: Function,
   capture: boolean,
   _target?: HTMLElement
 ) {
+  // 移除DOM事件
   (_target || target).removeEventListener(
     name,
     handler._wrapper || handler,
@@ -103,16 +139,27 @@ function remove (
   )
 }
 
+/**
+ * patch创建阶段、更新阶段、销毁阶段会执行
+ * patch阶段执行cbs.create、cbs.update、cb.destroy队列
+ * @param {*} oldVnode 
+ * @param {*} vnode 
+ * @returns 
+ */
 function updateDOMListeners (oldVnode: VNodeWithData, vnode: VNodeWithData) {
   if (isUndef(oldVnode.data.on) && isUndef(vnode.data.on)) {
+    // 新旧VNode节点上都没有事件
     return
   }
   const on = vnode.data.on || {}
   const oldOn = oldVnode.data.on || {}
   // vnode is empty when removing all listeners,
   // and use old vnode dom element
+  // destroy时，新vnode是空节点，使用旧的DOM节点
   target = vnode.elm || oldVnode.elm
+  // 处理v-model
   normalizeEvents(on)
+  // 更新事件
   updateListeners(on, oldOn, add, remove, createOnceHandler, vnode.context)
   target = undefined
 }

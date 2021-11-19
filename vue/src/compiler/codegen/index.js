@@ -355,10 +355,12 @@ export function genData (el: ASTElement, state: CodegenState): string {
   // 事件处理
   // event handlers
   if (el.events) {
+    // 生成事件处理函数
     data += `${genHandlers(el.events, false)},`
   }
   // 原生事件处理
   if (el.nativeEvents) {
+    // 生成事件处理函数
     data += `${genHandlers(el.nativeEvents, true)},`
   }
   // slot target

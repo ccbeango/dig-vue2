@@ -67,6 +67,7 @@ export function initMixin (Vue: Class<Component>) {
     vm._self = vm
     // 初始化 生命周期
     initLifecycle(vm)
+    // 初始化 事件
     initEvents(vm)
     // 初始化 render
     initRender(vm)
@@ -121,10 +122,10 @@ export function initInternalComponent (vm: Component, options: InternalComponent
   opts._parentVnode = parentVnode // 当前组件VNode 占位符VNode
 
   const vnodeComponentOptions = parentVnode.componentOptions
-  opts.propsData = vnodeComponentOptions.propsData
-  opts._parentListeners = vnodeComponentOptions.listeners
-  opts._renderChildren = vnodeComponentOptions.children
-  opts._componentTag = vnodeComponentOptions.tag
+  opts.propsData = vnodeComponentOptions.propsData // 组件的propsData
+  opts._parentListeners = vnodeComponentOptions.listeners // 在组件VNode占位符上的自定义事件，传到了组件的渲染VNode上
+  opts._renderChildren = vnodeComponentOptions.children // 组件的children
+  opts._componentTag = vnodeComponentOptions.tag // 组件占位符VNode的tag
 
   if (options.render) {
     opts.render = options.render

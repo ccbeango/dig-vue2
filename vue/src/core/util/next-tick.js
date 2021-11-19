@@ -16,7 +16,8 @@ import { isIE, isIOS, isNative } from './env'
  *    常见的micro task有 MutationObsever、Promise.then
  */
 
-export let isUsingMicroTask = false // 是否使用微任务标识
+// 是否使用微任务标识
+export let isUsingMicroTask = false // 在事件中使用 src/platforms/web/runtime/modules/events.js
 
 const callbacks = []
 let pending = false
