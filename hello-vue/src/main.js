@@ -6,4 +6,5 @@
 
 // 扩展
 // import './examples/06_扩展/01_event/main'
-import './examples/06_扩展/02_v-model/main'
+// import './examples/06_扩展/02_v-model/main'
+import './examples/06_扩展/03_v-model-component/main'

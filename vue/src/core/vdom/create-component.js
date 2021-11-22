@@ -212,7 +212,7 @@ export function createComponent (
   resolveConstructorOptions(Ctor)
 
   // transform component v-model data into props & events
-  // FIXME: 跳过 v-model 转成 props 和 events
+  // 组件v-model 转成 props 和 events
   if (isDef(data.model)) {
     transformModel(Ctor.options, data)
   }
@@ -370,22 +370,37 @@ function mergeHook (f1: any, f2: any): Function {
 
 // transform component v-model info (value and callback) into
 // prop and event handler respectively.
+/**
+ * 将组件v-model转成prop和event
+ *  data.attrs[prop] = data.model.value 
+ *  data.on[event] = data.model.callback
+ * @param {*} options 
+ * @param {*} data 
+ */
 function transformModel (options, data: any) {
+  // prop默认value 可自定义
   const prop = (options.model && options.model.prop) || 'value'
+  // event默认input 可自定义
   const event = (options.model && options.model.event) || 'input'
+  // data.attrs[prop] = data.model.value
   ;(data.attrs || (data.attrs = {}))[prop] = data.model.value
+
+  // 添加事件
   const on = data.on || (data.on = {})
   const existing = on[event]
   const callback = data.model.callback
   if (isDef(existing)) {
+    // 该类型事件已存在
     if (
       Array.isArray(existing)
         ? existing.indexOf(callback) === -1
         : existing !== callback
     ) {
+      // 将事件放在事件队列第一个
       on[event] = [callback].concat(existing)
     }
   } else {
+    // 事件不存在，直接添加事件
     on[event] = callback
   }
 }

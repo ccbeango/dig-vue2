@@ -41,7 +41,9 @@ const normalizeEvent = cached((name: string): {
 })
 
 /**
- * 创建事件定义的执行函数
+ * 创建一个函数的执行函数
+ *  - 创建事件定义的执行函数
+ *  - 创建指令hook的执行函数
  * @param {*} fns 要添加的事件函数定义
  * @param {*} vm 
  * @returns 

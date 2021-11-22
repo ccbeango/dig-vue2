@@ -5,6 +5,9 @@ import domProps from './dom-props'
 import style from './style'
 import transition from './transition'
 
+/**
+ * Web平台 module
+ */
 export default [
   attrs,
   klass,

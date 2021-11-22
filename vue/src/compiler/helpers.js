@@ -32,13 +32,21 @@ export function pluckModuleFunction<F: Function> (
     : []
 }
 
+/**
+ * AST元素上扩展props属性
+ * @param {*} el 
+ * @param {*} name 
+ * @param {*} value 
+ * @param {*} range 
+ * @param {*} dynamic 
+ */
 export function addProp (el: ASTElement, name: string, value: string, range?: Range, dynamic?: boolean) {
   (el.props || (el.props = [])).push(rangeSetItem({ name, value, dynamic }, range))
   el.plain = false
 }
 
 /**
- * AST元素上添加静态属性或动态属性
+ * AST元素上扩展静态属性或动态属性
  *  静态属性添加到AST元素的dynamicAttrs数组中
  *  动态属性添加到AST元素的attrs数组中
  * 
@@ -58,12 +66,30 @@ export function addAttr (el: ASTElement, name: string, value: any, range?: Range
   el.plain = false
 }
 
-// add a raw attr (use this in preTransforms)
+/**
+ * add a raw attr (use this in preTransforms)
+ * AST元素上扩展attrsMap和attrsList属性 preTransforms中使用
+ * @param {*} el 
+ * @param {*} name 
+ * @param {*} value 
+ * @param {*} range 
+ */
 export function addRawAttr (el: ASTElement, name: string, value: any, range?: Range) {
   el.attrsMap[name] = value
   el.attrsList.push(rangeSetItem({ name, value }, range))
 }
 
+/**
+ * 对AST元素扩展directives属性
+ * @param {*} el 
+ * @param {*} name 
+ * @param {*} rawName 
+ * @param {*} value 
+ * @param {*} arg 
+ * @param {*} isDynamicArg 
+ * @param {*} modifiers 
+ * @param {*} range 
+ */
 export function addDirective (
   el: ASTElement,
   name: string,
@@ -115,7 +141,7 @@ function prependModifierMarker (symbol: string, name: string, dynamic?: boolean)
  * @param {*} name 属性名
  * @param {*} value 属性值
  * @param {*} modifiers 修饰符对象Map
- * @param {*} important 事件权重 true放在同类型事件队列第一个 false放在最后一个
+ * @param {*} important 事件权重 true放在同类型事件队列第一个 false放在最后一个 v-model时为true
  * @param {*} warn 
  * @param {*} range 属性的索引
  * @param {*} dynamic 是否是动态名属性 @[test] test是一个变量
@@ -219,6 +245,12 @@ export function addHandler (
   el.plain = false
 }
 
+/**
+ * 获取AST上指定的属性
+ * @param {*} el 
+ * @param {*} name 要获取的属性属性名
+ * @returns 
+ */
 export function getRawBindingAttr (
   el: ASTElement,
   name: string
@@ -262,7 +294,7 @@ export function getBindingAttr (
 // By default it does NOT remove it from the map (attrsMap) because the map is
 // needed during codegen.
 /**
- * 从attrsList中移除掉指定属性
+ * 从attrsList中移除掉指定属性，并获取这个属性
  * @param {*} el   AST元素
  * @param {*} name 要移除属性
  * @param {*} removeFromMap 是否从attrsMap中也移除指定属性

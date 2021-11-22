@@ -19,9 +19,13 @@ if (isIE9) {
   })
 }
 
+/**
+ * v-model指令的handler
+ */
 const directive = {
   inserted (el, binding, vnode, oldVnode) {
     if (vnode.tag === 'select') {
+      // FIXME：select元素即下拉框处理
       // #6903
       if (oldVnode.elm && !oldVnode.elm._vOptions) {
         mergeVNodeHook(vnode, 'postpatch', () => {
@@ -32,8 +36,10 @@ const directive = {
       }
       el._vOptions = [].map.call(el.options, getValue)
     } else if (vnode.tag === 'textarea' || isTextInputType(el.type)) {
+      // textarea输入框或是指定类型的input
       el._vModifiers = binding.modifiers
-      if (!binding.modifiers.lazy) {
+      if (!binding.modifiers.lazy) { // 没有lazy修饰符
+        // 添加合成事件compositionstart、compositionend
         el.addEventListener('compositionstart', onCompositionStart)
         el.addEventListener('compositionend', onCompositionEnd)
         // Safari < 10.2 & UIWebView doesn't fire compositionend when
@@ -51,6 +57,7 @@ const directive = {
 
   componentUpdated (el, binding, vnode) {
     if (vnode.tag === 'select') {
+      // FIXME：下拉框处理
       setSelected(el, binding, vnode.context)
       // in case the options rendered by v-for have changed,
       // it's possible that the value is out-of-sync with the rendered options.
@@ -127,20 +134,36 @@ function getValue (option) {
     : option.value
 }
 
+/**
+ * DOM事件compositionstart回调
+ * @param {*} e 
+ */
 function onCompositionStart (e) {
+  // 开启IEM输入标识
   e.target.composing = true
 }
 
+/**
+ * DOM事件compositionend回调
+ * @param {*} e 
+ * @returns 
+ */
 function onCompositionEnd (e) {
   // prevent triggering an input event for no reason
   if (!e.target.composing) return
+  // 关闭IEM输入标识
   e.target.composing = false
+  // 手动触发DOM的input事件
   trigger(e.target, 'input')
 }
 
 function trigger (el, type) {
+  // https://developer.mozilla.org/zh-CN/docs/Web/API/Event/initEvent
+  // 创建一个事件
   const e = document.createEvent('HTMLEvents')
+  // 初始化一个事件，如 input事件，可以冒泡，可以取消
   e.initEvent(type, true, true)
+  // 触发el上的此事件监听
   el.dispatchEvent(e)
 }
 

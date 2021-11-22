@@ -558,6 +558,12 @@ export function mergeOptions (
  * This function is used because child instances need access
  * to assets defined in its ancestor chain.
  * resolve资源 component、directive、filter 并返回找到的asset
+ * 从vm.options[components|directives|filters]中返回查找的定义handler
+ * @param {*} options vm的options
+ * @param {*} type 要查找的type  options[type]
+ * @param {*} id  要查找的id options[type][id]
+ * @param {*} warnMissing 
+ * @returns 找到指令定义的handler处理
  */
 export function resolveAsset (
   options: Object,

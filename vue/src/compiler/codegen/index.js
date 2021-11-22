@@ -27,7 +27,8 @@ export class CodegenState {
     this.warn = options.warn || baseWarn
     this.transforms = pluckModuleFunction(options.modules, 'transformCode')
     this.dataGenFns = pluckModuleFunction(options.modules, 'genData') // web下 style、class获取genData
-    this.directives = extend(extend({}, baseDirectives), options.directives)
+    // baseDirectives v-on v-bind v-cloak web下的特定指令 v-model v-html v-text
+    this.directives = extend(extend({}, baseDirectives), options.directives) 
     const isReservedTag = options.isReservedTag || no
     this.maybeComponent = (el: ASTElement) => !!el.component || !isReservedTag(el.tag)
     this.onceId = 0
@@ -317,8 +318,9 @@ export function genData (el: ASTElement, state: CodegenState): string {
 
   // directives first.
   // directives may mutate the el's other properties before they are generated.
-  const dirs = genDirectives(el, state) // 指令data字符串
-  if (dirs) data += dirs + ','
+  // 优先调用，因为可能会修改AST元素的其它属性
+  const dirs = genDirectives(el, state)
+  if (dirs) data += dirs + ',' // 拼接指令code
 
   // key
   if (el.key) {
@@ -348,7 +350,7 @@ export function genData (el: ASTElement, state: CodegenState): string {
   if (el.attrs) {
     data += `attrs:${genProps(el.attrs)},`
   }
-  // DOM props
+  // DOM props input、select会生成props
   if (el.props) {
     data += `domProps:${genProps(el.props)},`
   }
@@ -372,7 +374,9 @@ export function genData (el: ASTElement, state: CodegenState): string {
   if (el.scopedSlots) {
     data += `${genScopedSlots(el, el.scopedSlots, state)},`
   }
+
   // component v-model
+  // 处理组件v-model
   if (el.model) {
     data += `model:{value:${
       el.model.value
@@ -408,23 +412,49 @@ export function genData (el: ASTElement, state: CodegenState): string {
   return data
 }
 
+/**
+ * 根据AST元素，生成指令code
+ * @param {*} el 
+ * @param {*} state 
+ * @returns 
+ */
 function genDirectives (el: ASTElement, state: CodegenState): string | void {
   const dirs = el.directives
   if (!dirs) return
   let res = 'directives:['
   let hasRuntime = false
+  /**
+   * dir 当前遍历到的指令
+   * needRuntime
+   */
   let i, l, dir, needRuntime
   for (i = 0, l = dirs.length; i < l; i++) {
     dir = dirs[i]
     needRuntime = true
+    // 获取指令对应的handler 如 v-model => state.directives[model]
     const gen: DirectiveFunction = state.directives[dir.name]
     if (gen) {
       // compile-time directive that manipulates AST.
       // returns true if it also needs a runtime counterpart.
+      // 执行指令的handler  v-model 就是 model()
       needRuntime = !!gen(el, dir, state.warn)
     }
     if (needRuntime) {
       hasRuntime = true
+      /**
+       * 生成运行时需要的代码code
+       * {
+       *  name: dir.name,
+       *  rawName: dir.rawName,
+       *  value?: dir.value,
+       *  expression?: JSON.stringify(dir.value),
+       *  arg?: dir.arg | `"${dir.arg}"`,
+       *  modifiers?: ${JSON.stringify(dir.modifiers)}`
+       * }
+       * 如 v-model生成: 
+       * `{name:"model",rawName:"v-model",value:(message),expression:"message"}`
+       * 
+       */ 
       res += `{name:"${dir.name}",rawName:"${dir.rawName}"${
         dir.value ? `,value:(${dir.value}),expression:${JSON.stringify(dir.value)}` : ''
       }${
@@ -435,6 +465,7 @@ function genDirectives (el: ASTElement, state: CodegenState): string | void {
     }
   }
   if (hasRuntime) {
+    // 有运行时指令，返回
     return res.slice(0, -1) + ']'
   }
 }

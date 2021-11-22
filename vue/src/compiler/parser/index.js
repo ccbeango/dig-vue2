@@ -594,7 +594,7 @@ export function parse (
 
 /**
  * 处理v-pre指令
- *  移除v-pre属性，并给AST元素添加v-pre标识
+ *  移除v-pre属性，并给AST元素扩展v-pre标识pre
  * @param {*} el AST元素
  */
 function processPre (el) {
@@ -1038,9 +1038,9 @@ function processComponent (el) {
 }
 
 /**
- * 处理在process后还未处理的属性
+ * 处理事件、绑定属性、自定义指令、静态属性
  *  包括：
- *    1. 未处理的动态属性 如： v-on @ v-bind : . 绑定的属性
+ *    1. 未处理的动态属性 如： v-on @ v-bind : . v-model 绑定的属性
  *    2. 静态属性 如 hello="world"
  * @param {*} el AST元素
  */
@@ -1090,9 +1090,11 @@ function processAttrs (el) {
             if (name === 'innerHtml') name = 'innerHTML'
           }
           if (modifiers.camel && !isDynamic) {
+            // camel修饰符
             name = camelize(name)
           }
           if (modifiers.sync) {
+            // 处理sync修饰符
             syncGen = genAssignmentCode(value, `$event`)
             if (!isDynamic) {
               addHandler(
@@ -1134,6 +1136,7 @@ function processAttrs (el) {
         if ((modifiers && modifiers.prop) || (
           !el.component && platformMustUseProp(el.tag, el.attrsMap.type, name)
         )) {
+          // 有prop修饰符 或 平台上必须将属性绑定到prop
           addProp(el, name, value, list[i], isDynamic)
         } else {
           // 将属性扩展到AST元素上
@@ -1150,21 +1153,26 @@ function processAttrs (el) {
         }
         // 处理事件 在el上扩展events或nativeEvents属性
         addHandler(el, name, value, modifiers, false, warn, list[i], isDynamic)
-      } else { // normal directives 其它指令处理 如用户自定义的指令
+      } else { // normal directives 指令处理 如v-model 或 用户自定义的指令
+        // 去掉开头指令符号
         name = name.replace(dirRE, '')
-        // parse arg
+
+        // parse arg 匹配指令上的参数 v-hello:wrold =>  [':wrold', 'wrold', index: 7, input: 'v-hello:wrold', groups: undefined]
         const argMatch = name.match(argRE)
         let arg = argMatch && argMatch[1]
         isDynamic = false
         if (arg) {
           name = name.slice(0, -(arg.length + 1))
           if (dynamicArgRE.test(arg)) {
+            // 指令参数动态值处理
             arg = arg.slice(1, -1)
             isDynamic = true
           }
         }
+        // AST元素上扩展directives属性
         addDirective(el, name, rawName, value, arg, isDynamic, modifiers, list[i])
         if (process.env.NODE_ENV !== 'production' && name === 'model') {
+          // v-model指令不允许绑定v-for在遍历的值
           checkForAliasModel(el, value)
         }
       }
@@ -1288,10 +1296,17 @@ function guardIESVGBug (attrs) {
   return res
 }
 
+/**
+ * 检查v-for指令的遍历值是否与v-model的绑定值相同
+ * 如 v-for ="item in list" v-model的value不能是item 
+ * @param {*} el 
+ * @param {*} value 
+ */
 function checkForAliasModel (el, value) {
   let _el = el
   while (_el) {
     if (_el.for && _el.alias === value) {
+      // 不能绑定v-for的遍历值到v-model上
       warn(
         `<${el.tag} v-model="${value}">: ` +
         `You are binding v-model directly to a v-for iteration alias. ` +
@@ -1301,6 +1316,7 @@ function checkForAliasModel (el, value) {
         el.rawAttrsMap['v-model']
       )
     }
+    // 遍历父AST继续查找
     _el = _el.parent
   }
 }

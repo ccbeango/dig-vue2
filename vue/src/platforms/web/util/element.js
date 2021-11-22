@@ -92,5 +92,5 @@ export function isUnknownElement (tag: string): boolean {
   }
 }
 
-// input类型标签
+// input类型标签 使用此类型做v-model可绑定的input类型
 export const isTextInputType = makeMap('text,number,password,search,email,tel,url')

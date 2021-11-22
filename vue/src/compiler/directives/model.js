@@ -2,6 +2,8 @@
 
 /**
  * Cross-platform code generation for component v-model
+ * 生成组件v-model的code
+ *  组件的v-model做的事情，只是在组件上添加一个事件和prop，没有runtime处理
  */
 export function genComponentModel (
   el: ASTElement,
@@ -10,19 +12,24 @@ export function genComponentModel (
 ): ?boolean {
   const { number, trim } = modifiers || {}
 
-  const baseValueExpression = '$$v'
+  const baseValueExpression = '$$v' // 默认value的code
   let valueExpression = baseValueExpression
   if (trim) {
+    // 添加trim修饰符code
     valueExpression =
       `(typeof ${baseValueExpression} === 'string'` +
       `? ${baseValueExpression}.trim()` +
       `: ${baseValueExpression})`
   }
   if (number) {
+    // 添加number修饰符code
     valueExpression = `_n(${valueExpression})`
   }
   const assignment = genAssignmentCode(value, valueExpression)
 
+  /**
+   * 生成组件v-model的处理对象
+   */
   el.model = {
     value: `(${value})`,
     expression: JSON.stringify(value),
@@ -32,15 +39,22 @@ export function genComponentModel (
 
 /**
  * Cross-platform codegen helper for generating v-model value assignment code.
+ * 生成v-model绑定值value的赋值code
+ * @param {*} value 
+ * @param {*} assignment 
+ * @returns 
  */
 export function genAssignmentCode (
   value: string,
   assignment: string
 ): string {
+  // 解析绑定值
   const res = parseModel(value)
   if (res.key === null) {
+    // value的赋值code 'hello=$event.target.value' 
     return `${value}=${assignment}`
   } else {
+    // 有值 说明是响应式的，生成$set赋值code
     return `$set(${res.exp}, ${res.key}, ${assignment})`
   }
 }
@@ -67,6 +81,25 @@ type ModelParseResult = {
   key: string | null
 }
 
+/**
+ * 解析v-model的绑定值格式 点操作符、中括号
+ * 
+ * 如下格式：
+ * - test
+ * - test[key]
+ * - test[test1[key]]
+ * - test["a"][key]
+ * - xxx.test[a[a].test1[key]]
+ * - test.xxx.a["asa"][test1[key]]
+ * 
+ * 解析结果：
+ *  {
+ *    exp:
+ *    key:
+ *  }
+ * @param {*} val 
+ * @returns 
+ */
 export function parseModel (val: string): ModelParseResult {
   // Fix https://github.com/vuejs/vue/pull/7730
   // allow v-model="obj.val " (trailing whitespace)

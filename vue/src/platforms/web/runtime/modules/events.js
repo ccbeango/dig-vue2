@@ -140,6 +140,7 @@ function remove (
 }
 
 /**
+ * 更新事件
  * patch创建阶段、更新阶段、销毁阶段会执行
  * patch阶段执行cbs.create、cbs.update、cb.destroy队列
  * @param {*} oldVnode 
