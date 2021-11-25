@@ -357,6 +357,7 @@ export function updateChildComponent (
   // "$stable" marker.
   const newScopedSlots = parentVnode.data.scopedSlots
   const oldScopedSlots = vm.$scopedSlots
+  // 是否有动态插槽
   const hasDynamicScopedSlot = !!(
     (newScopedSlots && !newScopedSlots.$stable) ||
     (oldScopedSlots !== emptyObject && !oldScopedSlots.$stable) ||
@@ -423,7 +424,12 @@ export function updateChildComponent (
 
   // resolve slots + force update if has children
   if (needsForceUpdate) {
+    // 旧插槽语法slot="xxx"添加的具名插槽 和 默认插槽  会执行这里 它们的渲染作用域是父级
+    // 所以旧语法的依赖收集，会收集父组件的Watcher，那么父组件执行时，有数据发生变化，会执行这里强制更新插槽组件；
+    // 而新语法的依赖收集，收集的是子插槽组件，不会执行到这里，派发通知会派发到子插槽组件上
+    // 有子VNode 重新去解析插槽内容 父组件更新，子插槽组件需要重新计算$slots
     vm.$slots = resolveSlots(renderChildren, parentVnode.context)
+    // 重新强制渲染
     vm.$forceUpdate()
   }
 

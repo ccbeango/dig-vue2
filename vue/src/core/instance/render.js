@@ -22,8 +22,10 @@ export function initRender (vm: Component) {
   const options = vm.$options
   // 占位符VNode
   const parentVnode = vm.$vnode = options._parentVnode // the placeholder node in parent tree
-  const renderContext = parentVnode && parentVnode.context
+  const renderContext = parentVnode && parentVnode.context // 父级vm实例
+  // $slots表示 具名插槽、默认插槽
   vm.$slots = resolveSlots(options._renderChildren, renderContext)
+  // $scopedSlots 表示 旧语法的作用域插槽 和 新语法的所有插槽
   vm.$scopedSlots = emptyObject
   // bind the createElement fn to this instance
   // so that we get proper render context inside it.
@@ -94,7 +96,7 @@ export function renderMixin (Vue: Class<Component>) {
     const { render, _parentVnode } = vm.$options
 
     if (_parentVnode) {
-      // $scopedSlots 作用域插槽
+      // $scopedSlots 处理父组件占位符VNode节点中的插槽元素
       vm.$scopedSlots = normalizeScopedSlots(
         _parentVnode.data.scopedSlots,
         vm.$slots,

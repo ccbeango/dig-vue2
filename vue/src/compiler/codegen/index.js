@@ -206,7 +206,7 @@ export function genIf (
  *  生成三元运算符code
  * @param {*} conditions 
  * @param {*} state 
- * @param {*} altGen 
+ * @param {*} altGen slot处理时为genScopedSlot函数
  * @param {*} altEmpty 
  * @returns 
  */
@@ -367,11 +367,14 @@ export function genData (el: ASTElement, state: CodegenState): string {
   }
   // slot target
   // only for non-scoped slots
+  // 只有旧的slot="xxx"语法会走到这里，新v-slot语法，如果没有插槽prop，el.slotScope会赋值为__empty__
   if (el.slotTarget && !el.slotScope) {
+    // 元素是具名插槽 且 非作用域插槽
     data += `slot:${el.slotTarget},`
   }
   // scoped slots
   if (el.scopedSlots) {
+    // 元素是插槽AST元素的父级 生成插槽元素的code
     data += `${genScopedSlots(el, el.scopedSlots, state)},`
   }
 
@@ -490,6 +493,13 @@ function genInlineTemplate (el: ASTElement, state: CodegenState): ?string {
   }
 }
 
+/**
+ * 生成父AST的scopedSlots插槽AST元素的code
+ * @param {*} el 插槽AST元素的父级AST元素
+ * @param {*} slots 插槽AST元素对象
+ * @param {*} state 
+ * @returns 
+ */
 function genScopedSlots (
   el: ASTElement,
   slots: { [key: string]: ASTElement },
@@ -499,6 +509,11 @@ function genScopedSlots (
   // components with only scoped slots to skip forced updates from parent.
   // but in some cases we have to bail-out of this optimization
   // for example if the slot contains dynamic names, has v-if or v-for on them...
+  /**
+   * 是否要强制更新
+   *  父AST元素有v-for 或
+   *  插槽元素中有元素是：动态插槽名、或有v-if、或有v-for、或有<slot>标签
+   */
   let needsForceUpdate = el.for || Object.keys(slots).some(key => {
     const slot = slots[key]
     return (
@@ -513,6 +528,8 @@ function genScopedSlots (
   // it's possible for the same component to be reused but with different
   // compiled slot content. To avoid that, we generate a unique key based on
   // the generated code of all the slot contents.
+  // 如果一个插槽组件在if条件分支中，则可能重复使用相同的组件但具有不同编译的插槽内容。
+  // 为避免这种情况，我们基于所有插槽内容生成的code来生成唯一key
   let needsKey = !!el.if
 
   // OR when it is inside another scoped slot or v-for (the reactivity may be
@@ -520,6 +537,7 @@ function genScopedSlots (
   // #9438, #9506
   // TODO: this can be further optimized by properly analyzing in-scope bindings
   // and skip force updating ones that do not actually use scope variables.
+  // 当插槽组件在另一个插槽中或在v-for中时，判断是否需要强制更新、是否需要key
   if (!needsForceUpdate) {
     let parent = el.parent
     while (parent) {
@@ -541,6 +559,7 @@ function genScopedSlots (
     .map(key => genScopedSlot(slots[key], state))
     .join(',')
 
+  // 返回code _u()函数包裹 _u: resolveScopedSlots
   return `scopedSlots:_u([${generatedSlots}]${
     needsForceUpdate ? `,null,true` : ``
   }${
@@ -557,6 +576,11 @@ function hash(str) {
   return hash >>> 0
 }
 
+/**
+ * 检测AST元素及子AST元素是否包含有slot标签的AST元素
+ * @param {*} el 
+ * @returns 
+ */
 function containsSlotChild (el: ASTNode): boolean {
   if (el.type === 1) {
     if (el.tag === 'slot') {
@@ -567,29 +591,49 @@ function containsSlotChild (el: ASTNode): boolean {
   return false
 }
 
+/**
+ * 生成插槽AST元素的code
+ * @param {*} el 
+ * @param {*} state 
+ * @returns 
+ */
 function genScopedSlot (
   el: ASTElement,
   state: CodegenState
 ): string {
+  // slot-scope 旧语法
   const isLegacySyntax = el.attrsMap['slot-scope']
+
   if (el.if && !el.ifProcessed && !isLegacySyntax) {
+    // 有v-if 调用genIf 传入genScopedSlot作为altGen
     return genIf(el, state, genScopedSlot, `null`)
   }
   if (el.for && !el.forProcessed) {
+    // 有v-for 调用genFor 传入genScopedSlot作为altGen
     return genFor(el, state, genScopedSlot)
   }
+
+  // 插槽prop  没有作用域的插槽 '_empty_' 替换成 '' 有插槽作用域，取插槽字符串值
   const slotScope = el.slotScope === emptySlotScopeToken
     ? ``
     : String(el.slotScope)
+
+  // 生成处理插槽AST的函数code 函数包裹，传入插槽prop，这样插槽中就能访问到作用域插槽中定义的属性prop
   const fn = `function(${slotScope}){` +
     `return ${el.tag === 'template'
       ? el.if && isLegacySyntax
+        // v-if 且 旧作用域插槽语法 添加一个三元运算符
         ? `(${el.if})?${genChildren(el, state) || 'undefined'}:undefined`
+        // 非v-if 或 新作用域插槽语法
         : genChildren(el, state) || 'undefined'
+      // 非tempalte标签的AST
       : genElement(el, state)
     }}`
+
   // reverse proxy v-slot without scope on this.$slots
-  const reverseProxy = slotScope ? `` : `,proxy:true`
+  // 添加代理标识proxy 没有插槽prop的插槽AST(具名插槽或默认插槽)会代理到this.$slots上
+  const reverseProxy = slotScope ? `` : `,proxy:true` // 没有插槽prop，添加proxy: true
+  // 返回作用域插槽code { key: slotTarget, fn: function(${slotScope}) {...}, proxy?: true  }
   return `{key:${el.slotTarget || `"default"`},fn:${fn}${reverseProxy}}`
 }
 
@@ -739,28 +783,44 @@ export function genComment (comment: ASTText): string {
   return `_e(${JSON.stringify(comment.text)})`
 }
 
+/**
+ * 生成插槽<slot>的code
+ * @param {*} el 
+ * @param {*} state 
+ * @returns 
+ */
 function genSlot (el: ASTElement, state: CodegenState): string {
-  const slotName = el.slotName || '"default"'
-  const children = genChildren(el, state)
+  const slotName = el.slotName || '"default"' // 插槽名 默认default
+  const children = genChildren(el, state) // 处理插槽节点的默认children内容 <slot>默认内容</slot>
+
+  // 包裹_t()函数 拼接slotName和children参数
+  // children是后备内容，即默认会显示的节点
   let res = `_t(${slotName}${children ? `,function(){return ${children}}` : ''}`
+
+  // 拼接slot标签上的属性attrs参数 [{name, value, dynamic}, ...]
   const attrs = el.attrs || el.dynamicAttrs
     ? genProps((el.attrs || []).concat(el.dynamicAttrs || []).map(attr => ({
         // slot props are camelized
-        name: camelize(attr.name),
+        name: camelize(attr.name), // 转驼峰
         value: attr.value,
         dynamic: attr.dynamic
       })))
     : null
+  
+  // v-bind绑定对象属性 如 v-bind="bindObj"
   const bind = el.attrsMap['v-bind']
   if ((attrs || bind) && !children) {
+    // 有属性 没有默认插槽内容
     res += `,null`
   }
+  // 拼接attrs参数
   if (attrs) {
     res += `,${attrs}`
   }
   if (bind) {
     res += `${attrs ? '' : ',null'},${bind}`
   }
+  // _t(slotName, children, attrs, bind)
   return res + ')'
 }
 

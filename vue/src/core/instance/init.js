@@ -124,7 +124,7 @@ export function initInternalComponent (vm: Component, options: InternalComponent
   const vnodeComponentOptions = parentVnode.componentOptions
   opts.propsData = vnodeComponentOptions.propsData // 组件的propsData
   opts._parentListeners = vnodeComponentOptions.listeners // 在组件VNode占位符上的自定义事件，传到了组件的渲染VNode上
-  opts._renderChildren = vnodeComponentOptions.children // 组件的children
+  opts._renderChildren = vnodeComponentOptions.children // 组件VNode的children
   opts._componentTag = vnodeComponentOptions.tag // 组件占位符VNode的tag
 
   if (options.render) {

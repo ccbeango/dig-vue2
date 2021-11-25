@@ -261,7 +261,7 @@ export function getRawBindingAttr (
 }
 
 /**
- * 获取动态绑定属性的值的表达式 或 值的字符串 
+ * 获取静态属性或动态绑定属性的值的表达式 或 值的字符串 
  * @param {*} el 
  * @param {*} name 
  * @param {*} getStatic 是否获取静态 true 直接返回绑定值字符串
@@ -321,6 +321,12 @@ export function getAndRemoveAttr (
   return val
 }
 
+/**
+ * 根据正则，从attrsList中移除掉指定属性，并获取这个属性
+ * @param {*} el 
+ * @param {*} name 
+ * @returns 
+ */
 export function getAndRemoveAttrByRegex (
   el: ASTElement,
   name: RegExp
