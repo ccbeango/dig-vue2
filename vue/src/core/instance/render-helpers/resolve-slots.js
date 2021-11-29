@@ -8,7 +8,12 @@ import type VNode from 'core/vdom/vnode'
 /**
  * 生成$slot的值
  * 
- * 首次渲染initRender 或 默认插槽和旧语法的具名插槽，在父组件内容变化更新子组插槽时updateChildComponent 执行
+ * 
+ * 执行时机
+ *  1. 首次渲染initRender 
+ *  2. 默认插槽和旧语法的具名插槽，在父组件内容变化更新子组插槽时updateChildComponent
+ * 
+ * 父组件未使用插槽语法，父组件的children都会被认为是默认插槽元素，添加到$slots.default数组中
  * 
  * 将组件VNode的children当作插槽VNode节点，生成$slot对象
  * {

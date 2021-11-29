@@ -134,14 +134,14 @@ function flushSchedulerQueue () {
   }
 
   // keep copies of post queues before resetting state
-  const activatedQueue = activatedChildren.slice()
+  const activatedQueue = activatedChildren.slice() // 复制要执行activated生命周期的组件
   // 已经执行过更新的Watcher队列
   const updatedQueue = queue.slice()
   // 重置scheduler状态 
   resetSchedulerState() // flushing阶段结束
 
   // call component updated and activated hooks
-  callActivatedHooks(activatedQueue)
+  callActivatedHooks(activatedQueue) // 执行生命周期activated
   /**
    * 生命周期函数 updated
    *  执行时机：queue中的每个watcher都执行后
@@ -177,6 +177,7 @@ function callUpdatedHooks (queue) {
 /**
  * Queue a kept-alive component that was activated during patch.
  * The queue will be processed after the entire tree has been patched.
+ * 保存更新时的keep-alive子组件队列 在更新watcher.run()执行后，去执行此队列
  */
 export function queueActivatedComponent (vm: Component) {
   // setting _inactive to false here so that a render function can
@@ -185,6 +186,10 @@ export function queueActivatedComponent (vm: Component) {
   activatedChildren.push(vm)
 }
 
+/**
+ * 执行所有keep-alive子组件的activated生命周期函数
+ * @param {*} queue 
+ */
 function callActivatedHooks (queue) {
   for (let i = 0; i < queue.length; i++) {
     queue[i]._inactive = true

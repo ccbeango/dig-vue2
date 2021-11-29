@@ -36,18 +36,23 @@ export function setActiveInstance(vm: Component) {
 export function initLifecycle (vm: Component) {
   const options = vm.$options
 
-  // locate first non-abstract parent
+  /*********** 下面逻辑会建立组件间的父子关系 *************/
+
   // parent 是 activeInstance
-  // 当前的vm实例要挂载到parent上
+  // 当前的vm实例要挂载到父级vm实例parent上
   // parent就是当前vm实例的父级vm实例
+  // locate first non-abstract parent
   let parent = options.parent
-  if (parent && !options.abstract) {
+  if (parent && !options.abstract) { // 抽象组件处理
+    // 组件实例建立父子关系时，忽略抽象组件
     while (parent.$options.abstract && parent.$parent) {
+      // 当前vm实例的父级如果是抽象组件 且 父级抽象组件的父级存在
+      // 忽略父级抽象组件 再循环判断
       parent = parent.$parent
     }
 
-    // 将当前vm实例添加到parent的$children中
-    // 建立实例间实际的父子级关系
+    // 将当前vm实例添加到非抽象组件的parent.$children中
+    // 建立实例间实际的父子级关系 忽略抽象组件
     parent.$children.push(vm)
   }
 
@@ -62,12 +67,12 @@ export function initLifecycle (vm: Component) {
   vm.$refs = {}
 
   // vm实例其它内置属性
-  vm._watcher = null
-  vm._inactive = null
-  vm._directInactive = false
-  vm._isMounted = false
-  vm._isDestroyed = false
-  vm._isBeingDestroyed = false
+  vm._watcher = null // vm实例的渲染Watcher
+  vm._inactive = null // 布尔值时 标识是否是keep-alive的不活跃组件
+  vm._directInactive = false // 标识是否是keep-alive的不活跃根组件
+  vm._isMounted = false // 是否已挂载
+  vm._isDestroyed = false // 是否已销毁
+  vm._isBeingDestroyed = false // 是否开始销毁
 }
 
 /**
@@ -438,43 +443,71 @@ export function updateChildComponent (
   }
 }
 
+/**
+ * 判断是否是不活跃的keep-alive组件树
+ * 如果返回true，即是不活跃的，说明此keep-alive组件的父级中还有keep-alive组件，
+ * 且父级的keep-alive组件标识了它的子组件都是不活跃的
+ * @param {*} vm 
+ * @returns 
+ */
 function isInInactiveTree (vm) {
   while (vm && (vm = vm.$parent)) {
-    if (vm._inactive) return true
+    // 遍历当前vm的父级vm，如果发现父级是不活跃的，标识当前vm是不活跃的
+    if (vm._inactive) return true // 命中，说明当前keep-alive包裹的子组件上方还有keep-alive组件包裹，且标识了它的子组件都是不活跃的
   }
   return false
 }
 
+/**
+ * 执行keep-alive子组件的activated生命周期函数
+ * @param {*} vm 
+ * @param {*} direct 是否是keep-alive直接(根)子组件
+ * @returns 
+ */
 export function activateChildComponent (vm: Component, direct?: boolean) {
-  if (direct) {
-    vm._directInactive = false
+  if (direct) { // 是keep-alive直接子组件
+    vm._directInactive = false // 根不活跃标识 置为 false 即 标识当前根是活跃的
     if (isInInactiveTree(vm)) {
+      // 当前vm的父级有不活跃标识_inactive为true 不处理
       return
     }
   } else if (vm._directInactive) {
+    // 当前vm是不活跃的根vm 不处理
     return
   }
   if (vm._inactive || vm._inactive === null) {
-    vm._inactive = false
+    // 当前vm是不活跃的keep-alive子组件
+    vm._inactive = false // 置为活跃的
     for (let i = 0; i < vm.$children.length; i++) {
+      // 子组件也递归调用此方法 执行子组件的activated
       activateChildComponent(vm.$children[i])
     }
+    // 执行当前vm的activated生命周期函数
     callHook(vm, 'activated')
   }
 }
 
+/**
+ * 执行keep-alive子组件的deactivated生命周期函数
+ * @param {*} vm 
+ * @param {*} direct 是否是keep-alive直接(根)子组件
+ * @returns 
+ */
 export function deactivateChildComponent (vm: Component, direct?: boolean) {
-  if (direct) {
+  if (direct) { // 是keep-alive直接子组件
     vm._directInactive = true
     if (isInInactiveTree(vm)) {
+      // 当前vm的父级有不活跃标识_inactive为true 不处理
       return
     }
   }
   if (!vm._inactive) {
-    vm._inactive = true
+    // 当前vm组件是活跃的keep-alive子组件
+    vm._inactive = true // 置为不活跃的
     for (let i = 0; i < vm.$children.length; i++) {
       deactivateChildComponent(vm.$children[i])
     }
+    // 执行当前vm的deactivated生命周期函数
     callHook(vm, 'deactivated')
   }
 }

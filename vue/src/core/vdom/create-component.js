@@ -46,10 +46,33 @@ const componentVNodeHooks = {
       !vnode.componentInstance._isDestroyed &&
       vnode.data.keepAlive
     ) {
-      // keep-alive组件处理
+      /**
+       * keep-alive包裹的子组件处理
+       * 当keep-alive的子组件非第一次执行时，命中这里的逻辑
+       * 
+       * 需要注意，这里处理的VNode节点是keep-alive包裹的子组件，而不是keep-alive组件本身
+       * keep-alive组件渲染返回的渲染VNode是它的子节点，并不是keep-alive渲染VNode本身，
+       * 它本身是并不会生成渲染VNode的，这也就是为什么它是抽象节点，不是生成实际的DOM
+       * 
+       * keep-alive组件首次渲染：第一次执行时，keep-alive组件会执行else中的逻辑，
+       * 创建keep-alive实例child，然后执行keep-alive组件的$mount，在执行到keep-alive
+       * 组件的render时，keep-alive组件渲染返回的渲染VNode是它的子节点，并不是
+       * keep-alive渲染VNode本身。
+       * 
+       * 那么它的子组件VNode第一次patch也会同样命中else中的逻辑，作为一个普通的组件
+       * 进行mount、render、patch，之后在挂载完毕之后，keep-alive组件的mounted执行，
+       * 在keep-alive中缓存已经插入到DOM的子组件vm实例。
+       * keep-alive下的子组件在第一次挂载时，都会执行上述逻辑。
+       * 
+       * keep-alive组件再次更新执行时，执行patchVNode，会执行prepatch，这时会执行
+       * updateChildComponent，命中needsForceUpdate，再次resolveSlots生成keep-alive子组件的默认插槽$slots.default内容，
+       * 然后执行keep-alive组件的$forceUpdate，重新执行到keep-alive组件的render，
+       * 此时返回了子组件的VNode，子组件VNode再执行patch过程，执行到patch下的createComponent
+       * 那么就会命中这里的逻辑
+       */
       // kept-alive components, treat as a patch
       const mountedNode: any = vnode // work around flow
-      componentVNodeHooks.prepatch(mountedNode, mountedNode)
+      componentVNodeHooks.prepatch(mountedNode, mountedNode) // 直接执行prepatch
     } else {
       /**
        * 创建组件占位符节点的组件实例
@@ -111,8 +134,11 @@ const componentVNodeHooks = {
         // change, so directly walking the tree here may call activated hooks
         // on incorrect children. Instead we push them into a queue which will
         // be processed after the whole patch process ended.
+        // 更新时，先将实例放到队列中，patch结束后再执行
         queueActivatedComponent(componentInstance)
       } else {
+        // 挂载时
+        // 执行keep-alive组件的生命周期activated
         activateChildComponent(componentInstance, true /* direct */)
       }
     }
@@ -122,8 +148,10 @@ const componentVNodeHooks = {
     const { componentInstance } = vnode
     if (!componentInstance._isDestroyed) {
       if (!vnode.data.keepAlive) {
+        // 非keep-alive的子组件，执行vm.$destroy()
         componentInstance.$destroy()
       } else {
+        // 非keep-alive的子组件，执行deactivated生命周期函数
         deactivateChildComponent(componentInstance, true /* direct */)
       }
     }

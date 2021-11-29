@@ -79,7 +79,7 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   // 目的是扩展普通对象组件，让它们具有Vue构造函数上定义的属性
   Vue.options._base = Vue
 
-  // 内置组件 添加到options.components
+  // 内置组件 扩展内置组件到options.components
   extend(Vue.options.components, builtInComponents)
   
   // API Vue.use

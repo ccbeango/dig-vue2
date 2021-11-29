@@ -306,7 +306,7 @@ export function createPatchFunction (backend) {
   function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
     let i = vnode.data
     if (isDef(i)) { // vnode.data定义
-      // 是否是keep-alive组件
+      // 是否是keep-alive的子组件 keep-alive重新渲染子组件会直接拿到componentInstance
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive
 
       // i中有hook说明是 组件的 hook中有init钩子函数  vnode.data.hook.init
@@ -332,8 +332,8 @@ export function createPatchFunction (backend) {
         // 组件在这里插入真实DOM节点 整个插入顺序是先子后父 原因在 hook.init() 执行
         insert(parentElm, vnode.elm, refElm)
 
-        // FIXME: 跳过keep-alive包裹组件处理
         if (isTrue(isReactivated)) {
+          // keep-alive包裹的子组件处理
           reactivateComponent(vnode, insertedVnodeQueue, parentElm, refElm)
         }
         return true
@@ -366,12 +366,20 @@ export function createPatchFunction (backend) {
     }
   }
 
+  /**
+   * keepa-alive子组件处理
+   * @param {*} vnode 
+   * @param {*} insertedVnodeQueue 
+   * @param {*} parentElm 
+   * @param {*} refElm 
+   */
   function reactivateComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
     let i
     // hack for #4339: a reactivated component with inner transition
     // does not trigger because the inner node's created hooks are not called
     // again. It's not ideal to involve module-specific logic in here but
     // there doesn't seem to be a better way to do it.
+    // FIXME: keep-alive组件再transition组件中问题处理
     let innerNode = vnode
     while (innerNode.componentInstance) {
       innerNode = innerNode.componentInstance._vnode
@@ -383,6 +391,8 @@ export function createPatchFunction (backend) {
         break
       }
     }
+
+    // 手动插入keep-alive的子组件DOM节点 上面已经插入一次，又执行一次？好像多余了
     // unlike a newly created component,
     // a reactivated keep-alive component doesn't insert itself
     insert(parentElm, vnode.elm, refElm)
@@ -501,12 +511,15 @@ export function createPatchFunction (backend) {
     }
   }
 
-  // 执行destory钩子 包括系统的和用户自定义的
+  /**
+   * 执行destory钩子 包括系统的和用户自定义的
+   * @param {*} vnode 
+   */
   function invokeDestroyHook (vnode) {
     let i, j
     const data = vnode.data
     if (isDef(data)) {
-      // 节点自定义了destory，执行destroy
+      // 执行destroy钩子函数
       if (isDef(i = data.hook) && isDef(i = i.destroy)) i(vnode)
       // 执行 cbs.destroy 队列
       for (i = 0; i < cbs.destroy.length; ++i) cbs.destroy[i](vnode)
@@ -1131,8 +1144,7 @@ export function createPatchFunction (backend) {
       }
     }
 
-    // 执行insert钩子函数
-    // insertedVnodeQueue在整个patch过程中是不断添加的
+    // 执行insert钩子函数 insertedVnodeQueue在整个patch过程中是不断添加的
     invokeInsertHook(vnode, insertedVnodeQueue, isInitialPatch)
     // 返回真实DOM
     return vnode.elm
