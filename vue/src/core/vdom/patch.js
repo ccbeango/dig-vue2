@@ -379,12 +379,13 @@ export function createPatchFunction (backend) {
     // does not trigger because the inner node's created hooks are not called
     // again. It's not ideal to involve module-specific logic in here but
     // there doesn't seem to be a better way to do it.
-    // FIXME: keep-alive组件再transition组件中问题处理
+    // keep-alive组件中有transition组件中问题处理
     let innerNode = vnode
     while (innerNode.componentInstance) {
       innerNode = innerNode.componentInstance._vnode
       if (isDef(i = innerNode.data) && isDef(i = i.transition)) {
         for (i = 0; i < cbs.activate.length; ++i) {
+          // 执行transition组件的activate钩子函数
           cbs.activate[i](emptyNode, innerNode)
         }
         insertedVnodeQueue.push(innerNode)

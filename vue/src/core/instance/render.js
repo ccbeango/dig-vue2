@@ -169,6 +169,7 @@ export function renderMixin (Vue: Class<Component>) {
     }
     // set parent
     // 当前组件渲染VNode的parent 指向 组件占位符VNode
+    // 只有VNode作为一个组件的根节点，才会有parent指向它再父组件中的占位符VNode
     vnode.parent = _parentVnode
     // render执行完返回的是渲染VNode
     return vnode

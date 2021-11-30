@@ -4,23 +4,34 @@ import { inBrowser, isIE9 } from 'core/util/index'
 import { addClass, removeClass } from './class-util'
 import { remove, extend, cached } from 'shared/util'
 
+/**
+ * 解析transition的数据
+ *  对象上扩展css过渡类
+ * @param {*} def 
+ * @returns 
+ */
 export function resolveTransition (def?: string | Object): ?Object {
-  if (!def) {
+  if (!def) { // 未定义
     return
   }
   /* istanbul ignore else */
   if (typeof def === 'object') {
     const res = {}
     if (def.css !== false) {
+      // 扩展css的所有默认的过渡类名到res上
       extend(res, autoCssTransition(def.name || 'v'))
     }
+    // 扩展定义的trasition对象到res上
+    // def扩展在过渡类名之后，是因为过渡类名用户可以自定义，覆盖掉默认的过渡类名
     extend(res, def)
     return res
   } else if (typeof def === 'string') {
+    // def是字符串，直接返回扩展的css过度类对象
     return autoCssTransition(def)
   }
 }
 
+// traisition需要的css缓存对象
 const autoCssTransition: (name: string) => Object = cached(name => {
   return {
     enterClass: `${name}-enter`,
@@ -63,13 +74,21 @@ const raf = inBrowser
     ? window.requestAnimationFrame.bind(window)
     : setTimeout
   : /* istanbul ignore next */ fn => fn()
-
+/**
+ * requestAnimationFrame封装
+ * @param {*} fn 
+ */
 export function nextFrame (fn: Function) {
   raf(() => {
     raf(fn)
   })
 }
 
+/**
+ * 元素节点添加过渡的class
+ * @param {*} el 
+ * @param {*} cls 
+ */
 export function addTransitionClass (el: any, cls: string) {
   const transitionClasses = el._transitionClasses || (el._transitionClasses = [])
   if (transitionClasses.indexOf(cls) < 0) {
@@ -85,6 +104,13 @@ export function removeTransitionClass (el: any, cls: string) {
   removeClass(el, cls)
 }
 
+/**
+ * 根据过渡或动画结束事件执行_enterCb回调
+ * @param {*} el 
+ * @param {*} expectedType 
+ * @param {*} cb 
+ * @returns 
+ */
 export function whenTransitionEnds (
   el: Element,
   expectedType: ?string,
@@ -110,6 +136,7 @@ export function whenTransitionEnds (
       end()
     }
   }, timeout + 1)
+  // 监听transitionend或animationend，根据动画结束事件，执行_enterCb回调
   el.addEventListener(event, onEnd)
 }
 
