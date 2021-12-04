@@ -26,9 +26,11 @@ const weexFactoryPlugin = {
 }
 
 const aliases = require('./alias')
+// 生成指定路径
 const resolve = p => {
   const base = p.split('/')[0]
   if (aliases[base]) {
+    // base是路径别名
     return path.resolve(aliases[base], p.slice(base.length + 1))
   } else {
     return path.resolve(__dirname, '../', p)
@@ -213,7 +215,12 @@ const builds = {
   }
 }
 
-function genConfig (name) {
+/**
+ * 生成指定builds[name]的配置
+ * @param {*} name builds对象的键
+ * @returns 
+ */
+ function genConfig (name) {
   const opts = builds[name]
   const config = {
     input: opts.entry,
@@ -264,6 +271,7 @@ function genConfig (name) {
 }
 
 if (process.env.TARGET) {
+  // 开发阶段根据package.json中yarn dev设置的Target，生成指定builds[target]的配置
   module.exports = genConfig(process.env.TARGET)
 } else {
   exports.getBuild = genConfig
