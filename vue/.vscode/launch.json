@@ -1,0 +1,37 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Program",
+      "program": "${file}"
+    },
+    {
+      "name": "Rollup",
+      "type": "node",
+      "request": "launch",
+      "protocol": "inspector",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["dev"],
+      "args":  ["--sourcemap"],
+      "console": "integratedTerminal",
+    },
+    {
+      "name": "Attach Demo",
+      "type": "pwa-chrome",
+      "request": "attach",
+      "urlFilter": "http://localhost:*",
+      "port": 9222
+    },
+    {
+      "name": "Launch Demo",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "file": "${file}"
+    }
+  ]
+}
