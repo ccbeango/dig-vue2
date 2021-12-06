@@ -8,6 +8,7 @@ import {
 
 import { LIFECYCLE_HOOKS } from 'shared/constants'
 
+// Vue.config默认配置
 export type Config = {
   // user
   optionMergeStrategies: { [key: string]: Function };

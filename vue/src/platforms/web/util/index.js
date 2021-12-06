@@ -11,7 +11,7 @@ export * from './element'
  *  el 如果是DOM节点，直接返回此节点 
  *  el 如果是string 
  *    document.querySelector获取此DOM节点
- *    节点不存在，则创建节点
+ *    节点不存在，则创建div节点
  *    最终返回DOM节点
  */
 export function query (el: string | Element): Element {

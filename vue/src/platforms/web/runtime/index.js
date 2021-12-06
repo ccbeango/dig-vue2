@@ -20,7 +20,7 @@ import platformDirectives from './directives/index'
 import platformComponents from './components/index'
 
 /**
- * 对web runtime进行扩展
+ * 对web平台下Vue进行扩展
  */
 
 // web平台相关工具函数
@@ -36,7 +36,7 @@ Vue.config.isUnknownElement = isUnknownElement // 是否是未知元素标签
 extend(Vue.options.directives, platformDirectives) // v-model v-show
 extend(Vue.options.components, platformComponents) // transition-group transition
 
-// 初始化__patch__方法
+// 扩展__patch__方法
 // install platform patch function
 Vue.prototype.__patch__ = inBrowser ? patch : noop
 
@@ -52,10 +52,10 @@ Vue.prototype.$mount = function (
   return mountComponent(this, el, hydrating)
 }
 
-// web平台 devtool的加载
 // devtools global hook
 /* istanbul ignore next */
 if (inBrowser) {
+  // 加载devtool
   setTimeout(() => {
     if (config.devtools) {
       if (devtools) {
@@ -75,6 +75,7 @@ if (inBrowser) {
       config.productionTip !== false &&
       typeof console !== 'undefined'
     ) {
+      // 开发环境提示
       console[console.info ? 'info' : 'log'](
         `You are running Vue in development mode.\n` +
         `Make sure to turn on production mode when deploying for production.\n` +

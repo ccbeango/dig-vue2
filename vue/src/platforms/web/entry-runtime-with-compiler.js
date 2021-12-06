@@ -9,15 +9,15 @@ import { query } from './util/index'
 import { compileToFunctions } from './compiler/index'
 import { shouldDecodeNewlines, shouldDecodeNewlinesForHref } from './util/compat'
 
+// 获取id选择符对应的innerHTML
 const idToTemplate = cached(id => {
   const el = query(id)
   return el && el.innerHTML
 })
 
-// $mount的实现
-// $mount是和编译环境相关的，所以将此方法在这里进行扩展实现
-// 完成 runtime + complier
+// 暂存$mount
 const mount = Vue.prototype.$mount
+// $mount是和编译环境相关的，所以将此方法在这里进行扩展实现
 Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean
@@ -29,8 +29,9 @@ Vue.prototype.$mount = function (
   if (el === document.body || el === document.documentElement) {
     /**
      * 节点是body或document节点类型，直接返回节点
-     * Vue 不能挂载在body、html这样的根节点上，因为render执行时，最终会替换掉原来的
-     * 节点，所以不能替换掉body或者html节点
+     * Vue 不能挂载在body、html这样的根节点上
+     * 因为Vue之后在挂载新的根节点时，patch过程会删除掉原来的节点，
+     * 而添加上新的节点，所以不能替换掉body或者html节点。
      */
     process.env.NODE_ENV !== 'production' && warn(
       `Do not mount Vue to <html> or <body> - mount to normal elements instead.`
@@ -54,8 +55,9 @@ Vue.prototype.$mount = function (
     if (template) {
       // 定义了template
       if (typeof template === 'string') {
-        // template是一个id，获取id的节点DOM
+        // 模板字符串(不做处理) 和 id选择符
         if (template.charAt(0) === '#') {
+          // template是一个id选择符，获取id的节点DOM
           // 获取此id的后代HTML作为字符串作为模板
           template = idToTemplate(template)
           /* istanbul ignore if */
@@ -77,7 +79,7 @@ Vue.prototype.$mount = function (
         return this
       }
     } else if (el) {
-      // 定义了el，获取el本身的HTML字符串
+      // 没有定义template 获取el本身的HTML字符串作为模板
       template = getOuterHTML(el)
     }
 

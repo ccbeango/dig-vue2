@@ -10,6 +10,7 @@ export function initAssetRegisters (Vue: GlobalAPI) {
    *    Vue.component()
    *    Vue.directive()
    *    Vue.filter()
+   * 调用方法时，其实是向Vue.options[components|directives|filters]中添加定义或获取定义
    */
   ASSET_TYPES.forEach(type => {
     Vue[type] = function (

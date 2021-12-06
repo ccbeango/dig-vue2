@@ -28,12 +28,13 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   configDef.get = () => config
   if (process.env.NODE_ENV !== 'production') {
     configDef.set = () => {
+      // 警告 不要直接替换掉Vue.config的定义
       warn(
         'Do not replace the Vue.config object, set individual fields instead.'
       )
     }
   }
-  // 定义 访问器属性 config
+  // 定义 全局配置的访问器属性 Vue.config
   Object.defineProperty(Vue, 'config', configDef)
 
   // exposed util methods.
