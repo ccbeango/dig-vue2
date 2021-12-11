@@ -1,0 +1,31 @@
+<html>
+  <head>
+    <title>Hello Vue</title>
+    <script src="../../../dist/vue.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+      const child = Vue.extend({
+        props: {
+          greet: String
+        },
+        template: '<h3>我是子组件 - {{greet}}</h3>'
+      });
+
+      const App = new Vue({
+        el: '#app',
+        template: `
+          <div>
+            <h2>我是父组件</h2>
+            <child :greet="msg"/>
+          </div>
+        `,
+        components: { child },
+        data: {
+          msg: "Hello Vue",
+        },
+      });
+    </script>
+  </body>
+</html>

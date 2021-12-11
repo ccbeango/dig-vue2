@@ -135,7 +135,7 @@ export function initInternalComponent (vm: Component, options: InternalComponent
 
 // 处理构造函数的options 并返回
 export function resolveConstructorOptions (Ctor: Class<Component>) {
-  let options = Ctor.options
+  let options = Ctor.options // Vue构造函数默认option
   if (Ctor.super) {
     const superOptions = resolveConstructorOptions(Ctor.super)
     const cachedSuperOptions = Ctor.superOptions

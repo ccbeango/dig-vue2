@@ -3,7 +3,7 @@ import { initGlobalAPI } from './global-api/index'
 import { isServerRendering } from 'core/util/env'
 import { FunctionalRenderContext } from 'core/vdom/create-functional-component'
 
-// 定义 Vue的实例属性
+// 定义 Vue的静态属性
 initGlobalAPI(Vue)
 
 // 定义 访问器属性 $isServer

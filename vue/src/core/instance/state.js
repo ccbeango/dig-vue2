@@ -38,6 +38,7 @@ const sharedPropertyDefinition = {
 
 /**
  * 代理target[sourceKey][key]的访问到target[key]上
+ *  为Vue组件构造函数添加的props和data添加代理访问方式
  *  这样可以通过vm.xxx访问到vm._props.xxx或vm._data.xxx
  * @param {*} target 
  * @param {*} sourceKey 

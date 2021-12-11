@@ -19,7 +19,7 @@ import {
 } from '../util/index'
 
 /**
- * Vue实例属性扩展 即静态属性和方法
+ * Vue实例静态属性和方法
  */
 
 export function initGlobalAPI (Vue: GlobalAPI) {
@@ -48,19 +48,18 @@ export function initGlobalAPI (Vue: GlobalAPI) {
     defineReactive
   }
 
-  // 全局静态方法
   Vue.set = set
   Vue.delete = del
   Vue.nextTick = nextTick
 
   // 2.6 explicit observable API
-  Vue.observable = <>(obj: T): T => {
+  Vue.observable = <T>(obj: T): T => {
     observe(obj)
     return obj
   }
 
   /**
-   * 全局的Vue.options
+   * 全局的Vue.options 即 构造函数的默认选项初始化
    * Vue.options = {
    *  _base: Vue,  // 指向Vue基类构造函数本身
    *  components: {},
@@ -80,15 +79,11 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   // 目的是扩展普通对象组件，让它们具有Vue构造函数上定义的属性
   Vue.options._base = Vue
 
-  // 内置组件 扩展内置组件到options.components
+  // 扩展内置组件到 options.components
   extend(Vue.options.components, builtInComponents)
   
-  // API Vue.use
-  initUse(Vue)
-  // API Vue.mixin
-  initMixin(Vue)
-  // Vue.extend
-  initExtend(Vue)
-  // Vue.component Vue.filter Vue.directive
-  initAssetRegisters(Vue)
+  initUse(Vue) // Vue.use
+  initMixin(Vue) // Vue.mixin
+  initExtend(Vue) // Vue.extend
+  initAssetRegisters(Vue) // Vue.component Vue.filter Vue.directive
 }

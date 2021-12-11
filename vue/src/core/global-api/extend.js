@@ -61,12 +61,9 @@ export function initExtend (Vue: GlobalAPI) {
     // avoids Object.defineProperty calls for each instance created.
     // props和computed，定义到原型上实现共享，这样可以避免每次实例化时都对props中的每个key进行proxy代理设置
     if (Sub.options.props) {
-      // 为每一个props的值添加代理
       initProps(Sub)
     }
     if (Sub.options.computed) {
-      // 初始化computed
-      // 将computed的每一项(key)添加到Sub.prototype[key]上
       initComputed(Sub)
     }
 
@@ -78,10 +75,7 @@ export function initExtend (Vue: GlobalAPI) {
 
     // create asset registers, so extended classes
     // can have their private assets too.
-    // 将全局Super上的component、directive、filter添加到Sub上
-    // Sub.component
-    // Sub.directive
-    // Sub.filter
+    // 将全局Super上的component、directive、filter方法添加到Sub上
     ASSET_TYPES.forEach(function (type) {
       Sub[type] = Super[type]
     })
@@ -95,9 +89,9 @@ export function initExtend (Vue: GlobalAPI) {
     // keep a reference to the super options at extension time.
     // later at instantiation we can check if Super's options have
     // been updated.
-    Sub.superOptions = Super.options // 保存Super的options 更新检测使用
-    Sub.extendOptions = extendOptions // 保存扩展的原对象
-    Sub.sealedOptions = extend({}, Sub.options) // 保存sealedOptions 浅拷贝Sub.options
+    Sub.superOptions = Super.options // 保存父Vue的options 更新检测使用
+    Sub.extendOptions = extendOptions // 保存子组件用来扩展的options
+    Sub.sealedOptions = extend({}, Sub.options) // 扩展完成的子Vue.options 做初始状态的封存
 
     // cache constructor
     // 缓存 cid: Sub 的map映射
@@ -108,7 +102,7 @@ export function initExtend (Vue: GlobalAPI) {
 
 /**
  * 初始化props
- *  为props中的每一项添加代理 详见proxy()方法
+ *  为props中的每一项的访问方式添加代理 详见proxy()方法
  * @param {*} Comp 
  */
 function initProps (Comp) {
