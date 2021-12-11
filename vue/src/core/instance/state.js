@@ -273,8 +273,8 @@ const computedWatcherOptions = { lazy: true }
  * @param {*} computed 
  */
 function initComputed (vm: Component, computed: Object) {
-  // $flow-disable-line
   // 创建保存computedWatcher的空对象
+  // $flow-disable-line
   const watchers = vm._computedWatchers = Object.create(null)
   
   // computed properties are just getters during SSR
