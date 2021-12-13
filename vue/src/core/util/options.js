@@ -26,7 +26,7 @@ import {
  * how to merge a parent option value and a child option
  * value into the final value.
  */
-// 合并策略 optionMergeStrategies用户可配置
+// options合并策略 optionMergeStrategies用户可配置
 const strats = config.optionMergeStrategies
 
 /**
@@ -52,12 +52,15 @@ if (process.env.NODE_ENV !== 'production') {
  * 合并两个对象 递归合并from到to中
  *   to中的每一项都设置成observed，可观察的
  *   如果to.key是一个对象，就递归调用本身mergeData，保证每个key都是可观察的
+ * @param {*} to 子类data
+ * @param {*} from 父类data
+ * @returns 
  */
 function mergeData (to: Object, from: ?Object): Object {
   if (!from) return to
   let key, toVal, fromVal
 
-  // 获取from的所有key数组
+  // 获取父类data的所有key数组
   const keys = hasSymbol
     ? Reflect.ownKeys(from)
     : Object.keys(from)
@@ -66,24 +69,21 @@ function mergeData (to: Object, from: ?Object): Object {
     key = keys[i]
 
     // in case the object is already observed...
-    // 跳过已观察key
-    if (key === '__ob__') continue
+    if (key === '__ob__') continue // 跳过响应式对象的__ob__键
     
     toVal = to[key]
     fromVal = from[key]
 
     if (!hasOwn(to, key)) {
-      // to中没有此key，添加key监听
+      // 父类的data[key]，子类没有，则将新增的数据加入响应式系统中
       set(to, key, fromVal)
     } else if (
       toVal !== fromVal &&
       isPlainObject(toVal) &&
       isPlainObject(fromVal)
-    ) {
-      // to中有此key
-      // 且 to和from中此key的val不相等
-      // 且 to和from中此key的val都是普通对象
-      // 递归调用
+    ) {   
+      // toVal !== fromVal不相等，且都是对象，递归合并 如果相等，则默认使用子类数据
+      // 处理深层对象，当合并的数据为多层嵌套对象时，需要递归调用mergeData进行比较合并
       mergeData(toVal, fromVal)
     }
   }
@@ -95,7 +95,6 @@ function mergeData (to: Object, from: ?Object): Object {
 /**
  * Data
  *  data、provide合并策略
- *  合并对象或函数 返回
  */
 export function mergeDataOrFn (
   parentVal: any,
@@ -104,20 +103,19 @@ export function mergeDataOrFn (
 ): ?Function {
   if (!vm) {
     /**
+     * 子父类关系 Vue.extend()创建子类
      * vm不为真
-     *    childVal不为真，返回parentVal
-     *    parentVal不为真，返回childVal
-     *    parentVal和childVal都为真
+     *    childVal不为真，返回parentVal 即 子类不存在data选项，则合并结果为父类data选项
+     *    parentVal不为真，返回childVal 即 父类不存在data选项，则合并结果为子类data选项
+     *    parentVal和childVal都为真 即 data选项在父类和子类同时存在的情况下返回的是一个函数mergedDataFn
      *      使用mergeData合并，childVal为to，parentVal为from
      */
 
     // in a Vue.extend merge, both should be functions
-    // childVal不为真，返回parentVal
-    if (!childVal) {
+    if (!childVal) { // 子类不存在data选项，则合并结果为父类data选项
       return parentVal
     }
-    // parentVal不为真，返回childVal
-    if (!parentVal) {
+    if (!parentVal) { // 父类不存在data选项，则合并结果为子类data选项
       return childVal
     }
 
@@ -126,16 +124,15 @@ export function mergeDataOrFn (
     // merged result of both functions... no need to
     // check if parentVal is a function here because
     // it has to be a function to pass previous merges.
-    // parentVal和childVal都为真
-    return function mergedDataFn () {
-      // 使用mergeData合并，childVal为to，parentVal为from
+    return function mergedDataFn () { // data选项在父类和子类同时存在的情况下返回的是一个函数
+      // 子类实例和父类实例，分别将子类和父类实例中data函数执行后返回的对象传递给mergeData函数做数据合并
       return mergeData(
-        typeof childVal === 'function' ? childVal.call(this, this) : childVal,
-        typeof parentVal === 'function' ? parentVal.call(this, this) : parentVal
+        typeof childVal === 'function' ? childVal.call(this, this) : childVal, // to
+        typeof parentVal === 'function' ? parentVal.call(this, this) : parentVal // from
       )
     }
   } else {
-    // vm为真
+    // vm为真 Vue构造函数实例对象
     return function mergedInstanceDataFn () {
       // instance merge
       const instanceData = typeof childVal === 'function'
@@ -145,8 +142,10 @@ export function mergeDataOrFn (
         ? parentVal.call(vm, vm)
         : parentVal
       if (instanceData) {
+        // 当实例中传递data选项时，将实例的data对象和Vm构造函数上的data属性选项合并
         return mergeData(instanceData, defaultData)
       } else {
+        // 当实例中不传递data时，默认返回Vm构造函数上的data属性选项
         return defaultData
       }
     }
@@ -163,9 +162,10 @@ strats.data = function (
   childVal: any,
   vm?: Component
 ): ?Function {
+  // vm代表是否为Vue创建的实例，否则是子父类的关系
   if (!vm) {
-    if (childVal && typeof childVal !== 'function') {
-      // 开发中常见错误 data需要是一个函数 否则会提示警告 
+    if (childVal && typeof childVal !== 'function') { // 必须保证子类的data类型是一个函数而不是一个对象
+      // 警告 data需要是一个函数 
       process.env.NODE_ENV !== 'production' && warn(
         'The "data" option should be a function ' +
         'that returns a per-instance value in component ' +
@@ -177,7 +177,7 @@ strats.data = function (
     }
     return mergeDataOrFn(parentVal, childVal)
   }
-
+  // new Vue创建的实例 传递vm作为函数的第三个参数
   return mergeDataOrFn(parentVal, childVal, vm)
 }
 
@@ -185,6 +185,10 @@ strats.data = function (
  * Hooks and props are merged as arrays.
  * 生命周期钩子函数合并策略
  *  将各个生命周期的钩子函数合并成数组
+ * 1. 如果子类不存在钩子选项，则以父类选项返回。
+ * 2. 如果父类不存在钩子选项，子类存在时，则以数组形式返回子类钩子选项。
+ * 3. 如果子类和父类都拥有相同钩子选项，则将子类选项和父类选项合并成数组，
+ *    子类钩子选项放在数组的末尾，这样在执行钩子时，永远是父类选项优先于子类选项执行。
  */
 function mergeHook (
   parentVal: ?Array<Function>,
@@ -205,6 +209,9 @@ function mergeHook (
     : res
 }
 
+/**
+ * 同一个钩子出现多次，去除掉重复的
+ */
 function dedupeHooks (hooks) {
   const res = []
   for (let i = 0; i < hooks.length; i++) {
@@ -225,7 +232,7 @@ LIFECYCLE_HOOKS.forEach(hook => {
  * When a vm is present (instance creation), we need to do
  * a three-way merge between constructor options, instance
  * options and parent options.
- *  资源component、directive、filter合并策略
+ *  资源选项components、directives、filters合并策略
  *    使用parentVal作为原型，将parentVal、childVal合并成一个新对象
  *     childVal会覆盖parentVal上相同的值
  */
@@ -238,7 +245,7 @@ function mergeAssets (
   // 将parentVal、childVal合并成一个新对象
   const res = Object.create(parentVal || null)
   if (childVal) {
-    // childVal需要是一个对象类型
+     // components,filters,directives选项必须为对象
     process.env.NODE_ENV !== 'production' && assertObjectType(key, childVal, vm)
     // childVal会覆盖parentVal上相同的值
     return extend(res, childVal)
@@ -273,13 +280,13 @@ strats.watch = function (
 
   // parentVal和childVal都不为真 或 只有一个为真
   /* istanbul ignore if */
-  if (!childVal) return Object.create(parentVal || null)
+  if (!childVal) return Object.create(parentVal || null) // 没有子类watch选项，则默认用父选项
   if (process.env.NODE_ENV !== 'production') {
-    assertObjectType(key, childVal, vm)
+    assertObjectType(key, childVal, vm) // 子类watch必须是对象
   }
-  if (!parentVal) return childVal
+  if (!parentVal) return childVal // 没有父类watch选项
 
-  // parentVal和childVal都为真
+  // parentVal和childVal都为真 子类和父类watch选项都存在
   // 相同的key合并成[parent, child]数组
   const ret = {}
   extend(ret, parentVal)
@@ -287,6 +294,7 @@ strats.watch = function (
     let parent = ret[key]
     const child = childVal[key]
     if (parent && !Array.isArray(parent)) {
+      // 父的选项先转换成数组
       parent = [parent]
     }
     ret[key] = parent
@@ -403,7 +411,7 @@ function normalizeProps (options: Object, vm: ?Component) {
         name = camelize(val) // 转驼峰
         res[name] = { type: null }
       } else if (process.env.NODE_ENV !== 'production') {
-        // 数组语法的props，元素必须是字符串
+        // 警告 数组语法的props，元素必须是字符串
         warn('props must be strings when using array syntax.')
       }
     }
@@ -420,7 +428,7 @@ function normalizeProps (options: Object, vm: ?Component) {
         : { type: val }
     }
   } else if (process.env.NODE_ENV !== 'production') {
-    // 非数组或对象的props警告提示
+    // 警告 props非数组或对象
     warn(
       `Invalid value for option "props": expected an Array or an Object, ` +
       `but got ${toRawType(props)}.`,
@@ -432,6 +440,7 @@ function normalizeProps (options: Object, vm: ?Component) {
 
 /**
  * Normalize all injections into Object-based format
+ *  将inject转成标准要求的对象格式
  */
 function normalizeInject (options: Object, vm: ?Component) {
   const inject = options.inject
@@ -449,6 +458,7 @@ function normalizeInject (options: Object, vm: ?Component) {
         : { from: val }
     }
   } else if (process.env.NODE_ENV !== 'production') {
+    // 警告 inject非数组或对象
     warn(
       `Invalid value for option "inject": expected an Array or an Object, ` +
       `but got ${toRawType(inject)}.`,
@@ -459,6 +469,7 @@ function normalizeInject (options: Object, vm: ?Component) {
 
 /**
  * Normalize raw function directives into object format.
+ *  将directive转成标准要求的对象格式
  */
 function normalizeDirectives (options: Object) {
   const dirs = options.directives
@@ -487,6 +498,7 @@ function assertObjectType (name: string, value: any, vm: ?Component) {
  * Merge two option objects into a new one.
  * Core utility used in both instantiation and inheritance.
  * 根据不同的合并策略，合并options
+ * 实例化、继承中使用
  * @param {*} parent options
  * @param {*} child  options
  * @param {*} vm     当前vm实例

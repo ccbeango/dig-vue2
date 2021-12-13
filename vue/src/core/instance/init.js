@@ -46,9 +46,9 @@ export function initMixin (Vue: Class<Component>) {
       initInternalComponent(vm, options)
     } else {
       // 用户主动调用 new Vue()的merge options
-      // 把Vue构造函数vm.constructor的options和用户传入的options做一层合并，到vm.$options上
+      // 把Vue构造函数vm.constructor的默认options和用户自定义options做合并，到vm.$options上
       vm.$options = mergeOptions(
-        // 返回 Vue.options
+        // Vue.options
         resolveConstructorOptions(vm.constructor),
         options || {},
         vm
@@ -96,15 +96,16 @@ export function initMixin (Vue: Class<Component>) {
       measure(`vue ${vm._name} init`, startTag, endTag)
     }
 
-    // 有el 调用$mount进行挂载
     if (vm.$options.el) {
+      // 有el 调用$mount进行挂载
+      // 说明根Vue实例提供了el，未提供需要手动调用
       vm.$mount(vm.$options.el)
     }
   }
 }
 
 /**
- * 初始化组件的$options属性
+ * 初始化组件的$options属性 递归合并父Vue类中的options
  * @param {*} vm 
  * @param {*} options 
  */
@@ -133,24 +134,28 @@ export function initInternalComponent (vm: Component, options: InternalComponent
   }
 }
 
-// 处理构造函数的options 并返回
+// 处理Vue构造函数的options 并返回Vue的默认options即Vue.options
 export function resolveConstructorOptions (Ctor: Class<Component>) {
   let options = Ctor.options // Vue构造函数默认option
   if (Ctor.super) {
+    // Ctor.super为真，说明是Vue子类，递归调用resolveConstructorOptions，最终实现继承所有的父Vue类中的options
     const superOptions = resolveConstructorOptions(Ctor.super)
     const cachedSuperOptions = Ctor.superOptions
-    if (superOptions !== cachedSuperOptions) {
+    if (superOptions !== cachedSuperOptions) { // 父Vue.options有改变
       // super option changed,
       // need to resolve new options.
-      Ctor.superOptions = superOptions
+      Ctor.superOptions = superOptions // 父Vue.options已变，重新赋值获取新的superOptions
       // check if there are any late-modified/attached options (#4976)
       const modifiedOptions = resolveModifiedOptions(Ctor)
       // update base extend options
       if (modifiedOptions) {
+        // 改变的options再合并到用户自定义的extendOptions
         extend(Ctor.extendOptions, modifiedOptions)
       }
+      // 合并策略
       options = Ctor.options = mergeOptions(superOptions, Ctor.extendOptions)
       if (options.name) {
+        // 更新当前组件构造函数到components
         options.components[options.name] = Ctor
       }
     }
@@ -158,15 +163,22 @@ export function resolveConstructorOptions (Ctor: Class<Component>) {
   return options
 }
 
+/**
+ * Vue.options有变动，返回已变动的options项modified
+ * @param {*} Ctor 
+ * @returns 
+ */
 function resolveModifiedOptions (Ctor: Class<Component>): ?Object {
   let modified
-  const latest = Ctor.options
-  const sealed = Ctor.sealedOptions
+  const latest = Ctor.options // 当前的options
+  const sealed = Ctor.sealedOptions // 原options的封存备份
   for (const key in latest) {
     if (latest[key] !== sealed[key]) {
+      // 记录有变动的options项到modified
       if (!modified) modified = {}
       modified[key] = latest[key]
     }
   }
+  // 返回变动的options项
   return modified
 }

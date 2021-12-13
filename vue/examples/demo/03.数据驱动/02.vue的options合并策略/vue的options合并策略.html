@@ -1,0 +1,62 @@
+<html>
+  <head>
+    <title>Hello Vue</title>
+    <script src="../../../../dist/vue.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+      let A  = Vue.extend({
+        template: '<div>{{msg}}</div>',
+        data() {
+          return {
+            msg: '我是孙子组件'
+          }
+        }
+      })
+
+      let childComp = {
+        template: '<div>{{msg}} <A/></div>',
+        components: {
+          A
+        },
+        props: {
+          info: String
+        },
+        data() {
+          return {
+            msg: '我是子组件'
+          }
+        },
+        created() {
+          console.log('child created')
+        },
+        mounted() {
+          console.log('child mounted')
+        }
+      }
+
+      Vue.mixin({
+        data () {
+          return {
+            hello: 'world'
+          }
+        },
+        created() {
+          console.log('mixin parent created')
+        }
+      })
+
+      let app = new Vue({
+        el: '#app',
+        template: `<div><h1>{{msg}}</h1><childComp/></div>`,
+        data: {
+          msg: '我是父组件'
+        },
+        components: {
+          childComp
+        }
+      })
+    </script>
+  </body>
+</html>

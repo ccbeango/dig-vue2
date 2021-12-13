@@ -1457,7 +1457,7 @@
    * how to merge a parent option value and a child option
    * value into the final value.
    */
-  // 合并策略 optionMergeStrategies用户可配置
+  // options合并策略 optionMergeStrategies用户可配置
   var strats = config.optionMergeStrategies;
 
   /**
@@ -1483,12 +1483,15 @@
    * 合并两个对象 递归合并from到to中
    *   to中的每一项都设置成observed，可观察的
    *   如果to.key是一个对象，就递归调用本身mergeData，保证每个key都是可观察的
+   * @param {*} to 子类data
+   * @param {*} from 父类data
+   * @returns 
    */
   function mergeData (to, from) {
     if (!from) { return to }
     var key, toVal, fromVal;
 
-    // 获取from的所有key数组
+    // 获取父类data的所有key数组
     var keys = hasSymbol
       ? Reflect.ownKeys(from)
       : Object.keys(from);
@@ -1497,24 +1500,21 @@
       key = keys[i];
 
       // in case the object is already observed...
-      // 跳过已观察key
-      if (key === '__ob__') { continue }
+      if (key === '__ob__') { continue } // 跳过响应式对象的__ob__键
       
       toVal = to[key];
       fromVal = from[key];
 
       if (!hasOwn(to, key)) {
-        // to中没有此key，添加key监听
+        // 父类的data[key]，子类没有，则将新增的数据加入响应式系统中
         set(to, key, fromVal);
       } else if (
         toVal !== fromVal &&
         isPlainObject(toVal) &&
         isPlainObject(fromVal)
-      ) {
-        // to中有此key
-        // 且 to和from中此key的val不相等
-        // 且 to和from中此key的val都是普通对象
-        // 递归调用
+      ) {   
+        // toVal !== fromVal不相等，且都是对象，递归合并 如果相等，则默认使用子类数据
+        // 处理深层对象，当合并的数据为多层嵌套对象时，需要递归调用mergeData进行比较合并
         mergeData(toVal, fromVal);
       }
     }
@@ -1526,7 +1526,6 @@
   /**
    * Data
    *  data、provide合并策略
-   *  合并对象或函数 返回
    */
   function mergeDataOrFn (
     parentVal,
@@ -1535,20 +1534,19 @@
   ) {
     if (!vm) {
       /**
+       * 子父类关系 Vue.extend()创建子类
        * vm不为真
-       *    childVal不为真，返回parentVal
-       *    parentVal不为真，返回childVal
-       *    parentVal和childVal都为真
+       *    childVal不为真，返回parentVal 即 子类不存在data选项，则合并结果为父类data选项
+       *    parentVal不为真，返回childVal 即 父类不存在data选项，则合并结果为子类data选项
+       *    parentVal和childVal都为真 即 data选项在父类和子类同时存在的情况下返回的是一个函数mergedDataFn
        *      使用mergeData合并，childVal为to，parentVal为from
        */
 
       // in a Vue.extend merge, both should be functions
-      // childVal不为真，返回parentVal
-      if (!childVal) {
+      if (!childVal) { // 子类不存在data选项，则合并结果为父类data选项
         return parentVal
       }
-      // parentVal不为真，返回childVal
-      if (!parentVal) {
+      if (!parentVal) { // 父类不存在data选项，则合并结果为子类data选项
         return childVal
       }
 
@@ -1557,16 +1555,15 @@
       // merged result of both functions... no need to
       // check if parentVal is a function here because
       // it has to be a function to pass previous merges.
-      // parentVal和childVal都为真
-      return function mergedDataFn () {
-        // 使用mergeData合并，childVal为to，parentVal为from
+      return function mergedDataFn () { // data选项在父类和子类同时存在的情况下返回的是一个函数
+        // 子类实例和父类实例，分别将子类和父类实例中data函数执行后返回的对象传递给mergeData函数做数据合并
         return mergeData(
-          typeof childVal === 'function' ? childVal.call(this, this) : childVal,
-          typeof parentVal === 'function' ? parentVal.call(this, this) : parentVal
+          typeof childVal === 'function' ? childVal.call(this, this) : childVal, // to
+          typeof parentVal === 'function' ? parentVal.call(this, this) : parentVal // from
         )
       }
     } else {
-      // vm为真
+      // vm为真 Vue构造函数实例对象
       return function mergedInstanceDataFn () {
         // instance merge
         var instanceData = typeof childVal === 'function'
@@ -1576,8 +1573,10 @@
           ? parentVal.call(vm, vm)
           : parentVal;
         if (instanceData) {
+          // 当实例中传递data选项时，将实例的data对象和Vm构造函数上的data属性选项合并
           return mergeData(instanceData, defaultData)
         } else {
+          // 当实例中不传递data时，默认返回Vm构造函数上的data属性选项
           return defaultData
         }
       }
@@ -1594,9 +1593,10 @@
     childVal,
     vm
   ) {
+    // vm代表是否为Vue创建的实例，否则是子父类的关系
     if (!vm) {
-      if (childVal && typeof childVal !== 'function') {
-        // 开发中常见错误 data需要是一个函数 否则会提示警告 
+      if (childVal && typeof childVal !== 'function') { // 必须保证子类的data类型是一个函数而不是一个对象
+        // 警告 data需要是一个函数 
         warn(
           'The "data" option should be a function ' +
           'that returns a per-instance value in component ' +
@@ -1608,7 +1608,7 @@
       }
       return mergeDataOrFn(parentVal, childVal)
     }
-
+    // new Vue创建的实例 传递vm作为函数的第三个参数
     return mergeDataOrFn(parentVal, childVal, vm)
   };
 
@@ -1616,6 +1616,10 @@
    * Hooks and props are merged as arrays.
    * 生命周期钩子函数合并策略
    *  将各个生命周期的钩子函数合并成数组
+   * 1. 如果子类不存在钩子选项，则以父类选项返回。
+   * 2. 如果父类不存在钩子选项，子类存在时，则以数组形式返回子类钩子选项。
+   * 3. 如果子类和父类都拥有相同钩子选项，则将子类选项和父类选项合并成数组，
+   *    子类钩子选项放在数组的末尾，这样在执行钩子时，永远是父类选项优先于子类选项执行。
    */
   function mergeHook (
     parentVal,
@@ -1636,6 +1640,9 @@
       : res
   }
 
+  /**
+   * 同一个钩子出现多次，去除掉重复的
+   */
   function dedupeHooks (hooks) {
     var res = [];
     for (var i = 0; i < hooks.length; i++) {
@@ -1656,7 +1663,7 @@
    * When a vm is present (instance creation), we need to do
    * a three-way merge between constructor options, instance
    * options and parent options.
-   *  资源component、directive、filter合并策略
+   *  资源选项components、directives、filters合并策略
    *    使用parentVal作为原型，将parentVal、childVal合并成一个新对象
    *     childVal会覆盖parentVal上相同的值
    */
@@ -1669,7 +1676,7 @@
     // 将parentVal、childVal合并成一个新对象
     var res = Object.create(parentVal || null);
     if (childVal) {
-      // childVal需要是一个对象类型
+       // components,filters,directives选项必须为对象
       assertObjectType(key, childVal, vm);
       // childVal会覆盖parentVal上相同的值
       return extend(res, childVal)
@@ -1704,13 +1711,13 @@
 
     // parentVal和childVal都不为真 或 只有一个为真
     /* istanbul ignore if */
-    if (!childVal) { return Object.create(parentVal || null) }
+    if (!childVal) { return Object.create(parentVal || null) } // 没有子类watch选项，则默认用父选项
     {
-      assertObjectType(key, childVal, vm);
+      assertObjectType(key, childVal, vm); // 子类watch必须是对象
     }
-    if (!parentVal) { return childVal }
+    if (!parentVal) { return childVal } // 没有父类watch选项
 
-    // parentVal和childVal都为真
+    // parentVal和childVal都为真 子类和父类watch选项都存在
     // 相同的key合并成[parent, child]数组
     var ret = {};
     extend(ret, parentVal);
@@ -1718,6 +1725,7 @@
       var parent = ret[key$1];
       var child = childVal[key$1];
       if (parent && !Array.isArray(parent)) {
+        // 父的选项先转换成数组
         parent = [parent];
       }
       ret[key$1] = parent
@@ -1834,7 +1842,7 @@
           name = camelize(val); // 转驼峰
           res[name] = { type: null };
         } else {
-          // 数组语法的props，元素必须是字符串
+          // 警告 数组语法的props，元素必须是字符串
           warn('props must be strings when using array syntax.');
         }
       }
@@ -1851,7 +1859,7 @@
           : { type: val };
       }
     } else {
-      // 非数组或对象的props警告提示
+      // 警告 props非数组或对象
       warn(
         "Invalid value for option \"props\": expected an Array or an Object, " +
         "but got " + (toRawType(props)) + ".",
@@ -1863,6 +1871,7 @@
 
   /**
    * Normalize all injections into Object-based format
+   *  将inject转成标准要求的对象格式
    */
   function normalizeInject (options, vm) {
     var inject = options.inject;
@@ -1880,6 +1889,7 @@
           : { from: val };
       }
     } else {
+      // 警告 inject非数组或对象
       warn(
         "Invalid value for option \"inject\": expected an Array or an Object, " +
         "but got " + (toRawType(inject)) + ".",
@@ -1890,6 +1900,7 @@
 
   /**
    * Normalize raw function directives into object format.
+   *  将directive转成标准要求的对象格式
    */
   function normalizeDirectives (options) {
     var dirs = options.directives;
@@ -1918,6 +1929,7 @@
    * Merge two option objects into a new one.
    * Core utility used in both instantiation and inheritance.
    * 根据不同的合并策略，合并options
+   * 实例化、继承中使用
    * @param {*} parent options
    * @param {*} child  options
    * @param {*} vm     当前vm实例
@@ -6326,6 +6338,7 @@
 
   /**
    * 代理target[sourceKey][key]的访问到target[key]上
+   *  为Vue组件构造函数添加的props和data添加代理访问方式
    *  这样可以通过vm.xxx访问到vm._props.xxx或vm._data.xxx
    * @param {*} target 
    * @param {*} sourceKey 
@@ -6559,8 +6572,8 @@
    * @param {*} computed 
    */
   function initComputed (vm, computed) {
-    // $flow-disable-line
     // 创建保存computedWatcher的空对象
+    // $flow-disable-line
     var watchers = vm._computedWatchers = Object.create(null);
     
     // computed properties are just getters during SSR
@@ -6931,9 +6944,9 @@
         initInternalComponent(vm, options);
       } else {
         // 用户主动调用 new Vue()的merge options
-        // 把Vue构造函数vm.constructor的options和用户传入的options做一层合并，到vm.$options上
+        // 把Vue构造函数vm.constructor的默认options和用户自定义options做合并，到vm.$options上
         vm.$options = mergeOptions(
-          // 返回 Vue.options
+          // Vue.options
           resolveConstructorOptions(vm.constructor),
           options || {},
           vm
@@ -6978,15 +6991,16 @@
         measure(("vue " + (vm._name) + " init"), startTag, endTag);
       }
 
-      // 有el 调用$mount进行挂载
       if (vm.$options.el) {
+        // 有el 调用$mount进行挂载
+        // 说明根Vue实例提供了el，未提供需要手动调用
         vm.$mount(vm.$options.el);
       }
     };
   }
 
   /**
-   * 初始化组件的$options属性
+   * 初始化组件的$options属性 递归合并父Vue类中的options
    * @param {*} vm 
    * @param {*} options 
    */
@@ -7015,24 +7029,28 @@
     }
   }
 
-  // 处理构造函数的options 并返回
+  // 处理Vue构造函数的options 并返回Vue的默认options即Vue.options
   function resolveConstructorOptions (Ctor) {
     var options = Ctor.options; // Vue构造函数默认option
     if (Ctor.super) {
+      // Ctor.super为真，说明是Vue子类，递归调用resolveConstructorOptions，最终实现继承所有的父Vue类中的options
       var superOptions = resolveConstructorOptions(Ctor.super);
       var cachedSuperOptions = Ctor.superOptions;
-      if (superOptions !== cachedSuperOptions) {
+      if (superOptions !== cachedSuperOptions) { // 父Vue.options有改变
         // super option changed,
         // need to resolve new options.
-        Ctor.superOptions = superOptions;
+        Ctor.superOptions = superOptions; // 父Vue.options已变，重新赋值获取新的superOptions
         // check if there are any late-modified/attached options (#4976)
         var modifiedOptions = resolveModifiedOptions(Ctor);
         // update base extend options
         if (modifiedOptions) {
+          // 改变的options再合并到用户自定义的extendOptions
           extend(Ctor.extendOptions, modifiedOptions);
         }
+        // 合并策略
         options = Ctor.options = mergeOptions(superOptions, Ctor.extendOptions);
         if (options.name) {
+          // 更新当前组件构造函数到components
           options.components[options.name] = Ctor;
         }
       }
@@ -7040,16 +7058,23 @@
     return options
   }
 
+  /**
+   * Vue.options有变动，返回已变动的options项modified
+   * @param {*} Ctor 
+   * @returns 
+   */
   function resolveModifiedOptions (Ctor) {
     var modified;
-    var latest = Ctor.options;
-    var sealed = Ctor.sealedOptions;
+    var latest = Ctor.options; // 当前的options
+    var sealed = Ctor.sealedOptions; // 原options的封存备份
     for (var key in latest) {
       if (latest[key] !== sealed[key]) {
+        // 记录有变动的options项到modified
         if (!modified) { modified = {}; }
         modified[key] = latest[key];
       }
     }
+    // 返回变动的options项
     return modified
   }
 
@@ -7077,18 +7102,22 @@
   /*  */
 
   function initUse (Vue) {
+    // 向Vue._installedPlugins中添加插件
     Vue.use = function (plugin) {
       var installedPlugins = (this._installedPlugins || (this._installedPlugins = []));
       if (installedPlugins.indexOf(plugin) > -1) {
+        // 已添加过
         return this
       }
 
       // additional parameters
       var args = toArray(arguments, 1);
-      args.unshift(this);
+      args.unshift(this); // 第一个参数是Vue本身
       if (typeof plugin.install === 'function') {
+        // 执行插件的install方法
         plugin.install.apply(plugin, args);
       } else if (typeof plugin === 'function') {
+        // plugin是一个函数，当作install方法执行
         plugin.apply(null, args);
       }
       installedPlugins.push(plugin);
@@ -7165,12 +7194,9 @@
       // avoids Object.defineProperty calls for each instance created.
       // props和computed，定义到原型上实现共享，这样可以避免每次实例化时都对props中的每个key进行proxy代理设置
       if (Sub.options.props) {
-        // 为每一个props的值添加代理
         initProps$1(Sub);
       }
       if (Sub.options.computed) {
-        // 初始化computed
-        // 将computed的每一项(key)添加到Sub.prototype[key]上
         initComputed$1(Sub);
       }
 
@@ -7182,10 +7208,7 @@
 
       // create asset registers, so extended classes
       // can have their private assets too.
-      // 将全局Super上的component、directive、filter添加到Sub上
-      // Sub.component
-      // Sub.directive
-      // Sub.filter
+      // 将全局Super上的component、directive、filter方法添加到Sub上
       ASSET_TYPES.forEach(function (type) {
         Sub[type] = Super[type];
       });
@@ -7199,9 +7222,9 @@
       // keep a reference to the super options at extension time.
       // later at instantiation we can check if Super's options have
       // been updated.
-      Sub.superOptions = Super.options; // 保存Super的options 更新检测使用
-      Sub.extendOptions = extendOptions; // 保存扩展的原对象
-      Sub.sealedOptions = extend({}, Sub.options); // 保存sealedOptions 浅拷贝Sub.options
+      Sub.superOptions = Super.options; // 保存父Vue的options 更新检测使用
+      Sub.extendOptions = extendOptions; // 保存子组件用来扩展的options
+      Sub.sealedOptions = extend({}, Sub.options); // 扩展完成的子Vue.options 做初始状态的封存
 
       // cache constructor
       // 缓存 cid: Sub 的map映射
@@ -7212,7 +7235,7 @@
 
   /**
    * 初始化props
-   *  为props中的每一项添加代理 详见proxy()方法
+   *  为props中的每一项的访问方式添加代理 详见proxy()方法
    * @param {*} Comp 
    */
   function initProps$1 (Comp) {
@@ -7563,7 +7586,6 @@
       defineReactive: defineReactive$$1
     };
 
-    // 全局静态方法
     Vue.set = set;
     Vue.delete = del;
     Vue.nextTick = nextTick;
@@ -7595,17 +7617,13 @@
     // 目的是扩展普通对象组件，让它们具有Vue构造函数上定义的属性
     Vue.options._base = Vue;
 
-    // 内置组件 扩展内置组件到options.components
+    // 扩展内置组件到 options.components
     extend(Vue.options.components, builtInComponents);
     
-    // API Vue.use
-    initUse(Vue);
-    // API Vue.mixin
-    initMixin$1(Vue);
-    // Vue.extend
-    initExtend(Vue);
-    // Vue.component Vue.filter Vue.directive
-    initAssetRegisters(Vue);
+    initUse(Vue); // Vue.use
+    initMixin$1(Vue); // Vue.mixin
+    initExtend(Vue); // Vue.extend
+    initAssetRegisters(Vue); // Vue.component Vue.filter Vue.directive
   }
 
   // 定义 Vue的静态属性

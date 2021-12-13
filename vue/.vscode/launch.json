@@ -24,6 +24,7 @@
       "name": "Attach Demo",
       "type": "pwa-chrome",
       "request": "attach",
+      "timeout": 5000,
       "urlFilter": "http://localhost:*",
       "port": 9222
     },
