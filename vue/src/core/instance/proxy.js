@@ -67,7 +67,7 @@ if (process.env.NODE_ENV !== 'production') {
       //    2.是字符串且下划线开头，并且非用户自定义在$data上的key
       const isAllowed = allowedGlobals(key) ||
         (typeof key === 'string' && key.charAt(0) === '_' && !(key in target.$data))
-      
+
       // 如果key既不在vm上
       // 并且不被允许，那么会出发警告
       if (!has && !isAllowed) {

@@ -19,7 +19,8 @@ import {
 } from '../util/index'
 
 /**
- * Vue实例静态属性和方法
+ * Vue构造函数上定义属性和方法
+ * 即 Vue的全局API
  */
 
 export function initGlobalAPI (Vue: GlobalAPI) {
@@ -81,7 +82,7 @@ export function initGlobalAPI (Vue: GlobalAPI) {
 
   // 扩展内置组件到 options.components
   extend(Vue.options.components, builtInComponents)
-  
+
   initUse(Vue) // Vue.use
   initMixin(Vue) // Vue.mixin
   initExtend(Vue) // Vue.extend

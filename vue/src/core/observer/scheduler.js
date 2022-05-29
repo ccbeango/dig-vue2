@@ -86,12 +86,12 @@ function flushSchedulerQueue () {
   /**
    * Watcher队列从小到达排序
    * 原因：
-   *    1.组件的更新由⽗到⼦；因为⽗组件的创建过程是先于⼦的，所以Watcher的创建
-   *      也是先⽗后⼦，执⾏顺序也应该保持先⽗后⼦
-   *    2.用户的自定义watcher要优先于渲染watcher执⾏；因为用户自定义Watcher是在
+   *    1.组件的更新由父到子；因为父组件的创建过程是先于子的，所以Watcher的创建
+   *      也是先小后大，执行顺序也应该保持先小后大
+   *    2.用户的自定义watcher要优先于渲染watcher执行；因为用户自定义Watcher是在
    *      渲染Watcher之前创建的
-   *    3.如果⼀个组件在⽗组件的Watcher执⾏期间被销毁，那么它对应的Watcher执⾏都可以
-   *      被跳过，所以⽗组件的Watcher应该先执⾏。
+   *    3.如果一个组件在父组件的Watcher执行期间被销毁，那么它对应的Watcher执行都可以
+   *      被跳过，所以父组件的Watcher应该先执行。
    */
   queue.sort((a, b) => a.id - b.id)
 
@@ -109,7 +109,7 @@ function flushSchedulerQueue () {
     id = watcher.id
     // 将执行的Watcher的id记录置为null
     has[id] = null
-    
+
     // 重新执行Watcher Watcher是渲染Watcher或userWatcher
     watcher.run()
 

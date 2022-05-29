@@ -134,7 +134,7 @@ export function _createElement (
           context
         )
       }
-      
+
       // 平台内置节点 HTML原生的
       vnode = new VNode(
         config.parsePlatformTagName(tag), data, children,

@@ -19,6 +19,7 @@ let uid = 0
 export function initMixin (Vue: Class<Component>) {
   // 使用new调用Vue构造函数时，执行Vue.prototype._init()方法
   Vue.prototype._init = function (options?: Object) {
+    // 构造函数中调用了_init()方法，所以这里的this也就是Vue构造函数创建的实例
     const vm: Component = this
     // a uid
     vm._uid = uid++
@@ -34,7 +35,7 @@ export function initMixin (Vue: Class<Component>) {
     // a flag to avoid this being observed
     vm._isVue = true
 
-    // 将用户传入的options最终merge到$options上
+    // 将用户传入的options和实例构造函数上的 最终merge到实例的vm.$options上
 
     // merge options
     if (options && options._isComponent) {

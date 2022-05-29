@@ -6,7 +6,7 @@
     {
       "label": "chrome-port-set",
       "type": "process",
-      "command": "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+      "command": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
       "isBackground": false,
       "args": [ "--remote-debugging-port=9222" ],
       "problemMatcher": {

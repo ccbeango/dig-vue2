@@ -543,7 +543,7 @@ export function stateMixin (Vue: Class<Component>) {
   // flow somehow has problems with directly declared definition object
   // when using Object.defineProperty, so we have to procedurally build up
   // the object here.
-  // 定义$data和$props
+  // 定义$data和$props 返回的是构造函数上定义的_data和_props
   const dataDef = {}
   dataDef.get = function () { return this._data }
   const propsDef = {}

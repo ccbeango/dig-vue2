@@ -98,7 +98,7 @@ export default class Watcher {
     this.active = true
     // computedWatcher使用此标志位 来决定是否evaluate()
     this.dirty = this.lazy // for lazy watchers
-    
+
     /**
      * Watcher和Dep之间的关系：
      *  Watcher会依赖很多数据，所以会订阅数据的Dep

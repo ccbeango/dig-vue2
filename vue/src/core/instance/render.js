@@ -22,6 +22,7 @@ export function initRender (vm: Component) {
   const options = vm.$options
   // 占位符VNode
   const parentVnode = vm.$vnode = options._parentVnode // the placeholder node in parent tree
+  // 该组件实例要渲染的上下文 就是组件在父组件中占位符vnode的上下文 指向的就是父级vm实例
   const renderContext = parentVnode && parentVnode.context // 父级vm实例
   // $slots表示 具名插槽、默认插槽
   vm.$slots = resolveSlots(options._renderChildren, renderContext)
@@ -71,7 +72,6 @@ export function setCurrentRenderingInstance (vm: Component) {
  *    内部方法 (render-helpers)
  *    Vue.prototype._render
  *    Vue.prototype.$nextTick
- *    
  */
 export function renderMixin (Vue: Class<Component>) {
   // install runtime convenience helpers

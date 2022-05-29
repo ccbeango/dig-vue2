@@ -22,8 +22,8 @@ import { updateListeners } from '../vdom/helpers/index'
 
 
 /**
- * 初始化自定义事件
- * @param {*} vm 
+ * 初始化组件实例的自定义事件
+ * @param {*} vm
  */
 export function initEvents (vm: Component) {
   vm._events = Object.create(null)
@@ -31,7 +31,7 @@ export function initEvents (vm: Component) {
   // init parent attached events
   const listeners = vm.$options._parentListeners
   if (listeners) {
-    // 更新组件的自定义事件
+    // 更新组件实例的自定义事件
     updateComponentListeners(vm, listeners)
   }
 }

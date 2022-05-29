@@ -15,6 +15,7 @@ export function initExtend (Vue: GlobalAPI) {
 
   /**
    * Class inheritance
+   * 通过继承 创建构造函数的子构造函数 并返回创建子组件构造函数
    */
   Vue.extend = function (extendOptions: Object): Function {
     extendOptions = extendOptions || {}
@@ -23,6 +24,8 @@ export function initExtend (Vue: GlobalAPI) {
     // _Ctor 添加_Ctor属性，做缓存优化
     // _Ctor的值是{ cid: VueComponent }的map映射
     // 好处：当多个父组件都使用同一个组件，即多处使用时，同一个组件extend初始化逻辑只会执行一次
+    // 因为同一个组件第二次执行extend时，它的options上会有_Ctor属性
+    // 并且保存了组件的实例对象，以SuperId为键在_Ctor对象上
     const cachedCtors = extendOptions._Ctor || (extendOptions._Ctor = {})
     if (cachedCtors[SuperId]) {
       return cachedCtors[SuperId]
@@ -34,6 +37,7 @@ export function initExtend (Vue: GlobalAPI) {
       validateComponentName(name)
     }
 
+    // 创建子Vue构造函数 即 创建子组件构造函数
     // 寄生式组合继承 使用父类原型Super.prototype作为Sub的原型
     const Sub = function VueComponent (options) {
       // 实例化Sub的时候，就会执行this._init逻辑，再次走到Vue实例的初始化逻辑
@@ -42,13 +46,16 @@ export function initExtend (Vue: GlobalAPI) {
     Sub.prototype = Object.create(Super.prototype)
     Sub.prototype.constructor = Sub
 
-    // 接下来再对Sub进行扩展
+    // 接下来再对子组件构造函数进行扩展
+    // 在子组件构造函数上添加属性和方法 这些属性和方法就会是这个子组件独有的
 
     // 生成cid
     Sub.cid = cid++
     // 合并生成options 
-    // 组件的默认options使用基类Vue.options 和 用户传入的options合并
-    // 用户在extendOptions传入的components、directive、filter都会是局部的
+    // 父构造函数的默认options使用基类Vue.options 和
+    // 用户想要创建子类构造函数（子组件）传入的options（extendOptions） 进行合并
+    // 此时，用户在extendOptions传入的components、directive、filter都会是局部的，
+    // 也就是只有这个子组件构造函数上才会有这些属性
     Sub.options = mergeOptions(
       Super.options,
       extendOptions
@@ -59,7 +66,7 @@ export function initExtend (Vue: GlobalAPI) {
     // For props and computed properties, we define the proxy getters on
     // the Vue instances at extension time, on the extended prototype. This
     // avoids Object.defineProperty calls for each instance created.
-    // props和computed，定义到原型上实现共享，这样可以避免每次实例化时都对props中的每个key进行proxy代理设置
+    // 创建子类构造函数时，props和computed，定义到原型上实现共享，这样可以避免每次实例化时都对props中的每个key进行proxy代理设置
     if (Sub.options.props) {
       initProps(Sub)
     }
@@ -90,7 +97,7 @@ export function initExtend (Vue: GlobalAPI) {
     // later at instantiation we can check if Super's options have
     // been updated.
     Sub.superOptions = Super.options // 保存父Vue的options 更新检测使用
-    Sub.extendOptions = extendOptions // 保存子组件用来扩展的options
+    Sub.extendOptions = extendOptions // 保存创建子组件构造函数的extendOptions
     Sub.sealedOptions = extend({}, Sub.options) // 扩展完成的子Vue.options 做初始状态的封存
 
     // cache constructor
